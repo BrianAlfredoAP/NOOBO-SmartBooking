@@ -1,5 +1,7 @@
 :root {
-  --page-background: #a6e0ff;
+  /* Warna ini harus cocok dengan ujung gradasi di Login.css (#87cef5)
+     agar tidak ada gap warna di area browser chrome mobile */
+  --page-background: #87cef5;
   font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import glossyBlueGraduationEmblem2 from "../assets/glossy-blue-graduation-emblem-2.png";
 import vector from "../assets/vector.png";
 import image from "../assets/image.png";
@@ -9,16 +9,16 @@ import "../web.app/Login.css";
 const accountTypes = [
   { id: "borrower", label: "Peminjam" },
   { id: "logistics", label: "Logistik Kampus" },
-];
+] as const;
 
 export const Login = () => {
-  const [accountType, setAccountType] = useState("borrower");
+  const [accountType, setAccountType] = useState<(typeof accountTypes)[number]["id"]>("borrower");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitted(true);
     if (!email.trim() || !password) {
@@ -51,7 +51,7 @@ export const Login = () => {
         <section aria-labelledby="login-heading" className="ln-card">
 
           {/* Tab switcher */}
-          <div className="ln-tab-bar">
+          <div className={`ln-tab-bar ${accountType === "logistics" ? "ln-tab-bar--logistics" : ""}`}>
             {accountTypes.map((type) => (
               <button
                 key={type.id}

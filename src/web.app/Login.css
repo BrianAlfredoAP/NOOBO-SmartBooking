@@ -10,7 +10,7 @@
   min-height: 100dvh;
   box-sizing: border-box;
 
-  background: transparent;
+  background: #fff;
 
   display: flex;
   align-items: center;
@@ -142,6 +142,7 @@
 
 /* ── Tab switcher ── */
 .ln-tab-bar {
+  position: relative;
   display: flex;
   width: 100%;
   height: 48px;
@@ -152,7 +153,25 @@
   box-sizing: border-box;
 }
 
+.ln-tab-bar::before {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 2);
+  height: calc(100% - 8px);
+  border-radius: 99px;
+  background: #032d92;
+  content: "";
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ln-tab-bar--logistics::before {
+  transform: translateX(100%);
+}
+
 .ln-tab-btn {
+  position: relative;
+  z-index: 1;
   flex: 1;
   border-radius: 99px;
   border: none;
@@ -162,11 +181,12 @@
   font-weight: 600;
   background: transparent;
   color: #1a1a2e;
-  transition: background 0.2s, color 0.2s;
+  transition: color 0.2s, transform 0.15s;
 }
 
+.ln-tab-btn:active { transform: scale(0.97); }
+
 .ln-tab-btn--active {
-  background: #032d92;
   color: #ffffff;
 }
 
@@ -208,6 +228,13 @@
   border: 1px solid #ddeeff;
   display: flex;
   align-items: center;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.ln-input-wrap:focus-within {
+  border-color: #72d6fc;
+  box-shadow: 0 0 0 3px rgba(114, 214, 252, 0.22);
+  transform: translateY(-1px);
 }
 
 .ln-icon-left {
@@ -245,7 +272,6 @@
 }
 
 .ln-input:focus {
-  box-shadow: 0 0 0 2px rgba(114, 214, 252, 0.6);
   border-radius: 12px;
 }
 
@@ -267,7 +293,10 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  transition: opacity 0.15s, transform 0.15s;
 }
+
+.ln-eye-btn:active { transform: translateY(-50%) scale(0.9); }
 
 .ln-eye-icon {
   width: 22px;
@@ -291,11 +320,15 @@
   font-weight: 500;
   color: #41a4ea;
   padding: 0;
+  transition: color 0.15s, transform 0.15s;
 }
 
 .ln-forgot-btn:hover {
   text-decoration: underline;
 }
+
+.ln-forgot-btn:active,
+.ln-help-link:active { transform: scale(0.97); }
 
 /* ── Submit ── */
 .ln-submit-btn {
@@ -310,12 +343,19 @@
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 18px rgba(5, 123, 248, 0.38);
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
   margin-top: 2px;
 }
 
 .ln-submit-btn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(5, 123, 248, 0.42);
+}
+
+.ln-submit-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(5, 123, 248, 0.3);
 }
 
 /* ── Bantuan ── */
@@ -339,19 +379,28 @@
   font-weight: 500;
   color: #41a4ea;
   padding: 0;
+  transition: color 0.15s, transform 0.15s;
 }
 
 .ln-help-link:hover {
   text-decoration: underline;
 }
 
-/* ══════════════════════════════════════
-   MOBILE  ≤ 700px
-   ══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .ln-tab-bar::before,
+  .ln-tab-btn,
+  .ln-input-wrap,
+  .ln-eye-btn,
+  .ln-forgot-btn,
+  .ln-submit-btn,
+  .ln-help-link {
+    transition: none;
+  }
+}
 
-@media screen and (max-width: 700px) {
+/* Mobile layout is used at every viewport size. */
   .ln-root {
-    background: transparent;
+    background: #fff;
 
     width: 100%;
     /* Gunakan 100svh sebagai fallback, 100dvh untuk browser modern */
@@ -382,7 +431,7 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 100%;
+    max-width: 430px;
     /* Tidak ada min-height di sini — biarkan konten menentukan tinggi */
     display: flex;
     flex-direction: column;
@@ -449,5 +498,73 @@
   .ln-circle-br {
     width: 180px;
     height: 180px;
+  }
+
+@media screen and (max-width: 700px) {
+  .ln-root {
+    background: linear-gradient(110deg, #dff3ff 0%, #b6e6ff 42%, #8fd7fa 100%);
+  }
+}
+
+@media screen and (min-width: 701px) {
+  html:has(.ln-root),
+  body:has(.ln-root),
+  #root:has(.ln-root) {
+    background: #fff;
+  }
+
+  .ln-root {
+    background: #fff;
+  }
+
+  .ln-inner {
+    width: min(100%, 430px);
+    max-width: 430px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 16px 16px 32px;
+    border: none;
+    border-radius: 0;
+    background: linear-gradient(110deg, #dff3ff 0%, #b6e6ff 42%, #8fd7fa 100%);
+    box-shadow: none;
+  }
+
+  .ln-left {
+    flex: none;
+    width: 100%;
+    padding: 40px 0 20px;
+    gap: 6px;
+  }
+
+  .ln-logo-n,
+  .ln-logo-bo {
+    font-size: 64px;
+    letter-spacing: -3px;
+  }
+
+  .ln-logo-cap {
+    width: 88px;
+    height: 80px;
+    margin-top: -6px;
+  }
+
+  .ln-tagline {
+    font-size: 14px;
+  }
+
+  .ln-card {
+    flex: none;
+    width: 100%;
+    max-width: 315px;
+    margin: 10px auto 32px;
+    padding: 24px 20px 28px;
+    border-radius: 20px;
+  }
+
+  .ln-input {
+    font-size: 16px;
   }
 }
