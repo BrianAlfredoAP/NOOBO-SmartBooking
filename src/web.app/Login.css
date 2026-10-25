@@ -1,0 +1,453 @@
+/* ══════════════════════════════════════
+   Login Page Styles
+   ══════════════════════════════════════ */
+
+/* ── Root wrapper ── */
+.ln-root {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+
+  background: transparent;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Jangan pakai overflow:hidden di sini — ini yang menyebabkan konten terpotong */
+  overflow: clip visible;
+  font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+}
+/* ── Dekorasi lingkaran ── */
+.ln-circle-tl {
+  position: absolute;
+  top: -120px;
+  left: -120px;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.ln-circle-br {
+  position: absolute;
+  bottom: -80px;
+  right: -80px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.20);
+  pointer-events: none;
+}
+
+/* ── Inner layout (two columns) ── */
+.ln-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+  padding: 40px 24px;
+  box-sizing: border-box;
+}
+
+/* ── Kolom kiri (logo) ── */
+.ln-left {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  transform: none;
+}
+
+.ln-logo-n {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(42px, 6vw, 72px);
+  font-weight: 700;
+  color: #032d92;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.ln-logo-cap {
+  width: clamp(58px, 8vw, 96px);
+  height: auto;
+  object-fit: contain;
+  margin-top: -8px;
+}
+
+.ln-logo-bo {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(42px, 6vw, 72px);
+  font-weight: 700;
+  color: #057bf8;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.ln-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.ln-tagline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(16px, 1.6vw, 20px);
+  font-weight: 500;
+  color: #4a4a6a;
+  margin-top: 4px;
+  margin-left: 0;
+  text-align: center;
+}
+
+.ln-inner {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  padding: 40px 32px;
+  box-sizing: border-box;
+}
+
+  
+/* ── Card (kanan / bawah di mobile) ── */
+.ln-card {
+  flex: 0 0 420px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 32px 28px 28px;
+  box-shadow: 0 8px 40px rgba(5, 123, 248, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* ── Tab switcher ── */
+.ln-tab-bar {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  border-radius: 99px;
+  background: #b3e8fb;
+  padding: 4px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.ln-tab-btn {
+  flex: 1;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: #1a1a2e;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ln-tab-btn--active {
+  background: #032d92;
+  color: #ffffff;
+}
+
+/* ── Heading ── */
+.ln-heading {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #605c5c;
+  margin: 0 0 20px 0;
+}
+
+/* ── Form ── */
+.ln-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ln-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ln-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #605c5c;
+}
+
+.ln-input-wrap {
+  position: relative;
+  height: 46px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #ddeeff;
+  display: flex;
+  align-items: center;
+}
+
+.ln-icon-left {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.ln-icon-lock {
+  width: 18px;
+  height: 20px;
+}
+
+.ln-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding-left: 44px;
+  padding-right: 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3a3a3a;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ln-input::placeholder {
+  color: #bababa;
+}
+
+.ln-input:focus {
+  box-shadow: 0 0 0 2px rgba(114, 214, 252, 0.6);
+  border-radius: 12px;
+}
+
+.ln-input--password {
+  padding-right: 44px;
+}
+
+.ln-eye-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ln-eye-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.45;
+}
+
+/* ── Lupa kata sandi ── */
+.ln-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ln-forgot-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #41a4ea;
+  padding: 0;
+}
+
+.ln-forgot-btn:hover {
+  text-decoration: underline;
+}
+
+/* ── Submit ── */
+.ln-submit-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(90deg, #057bf8 0%, #2196f3 100%);
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(5, 123, 248, 0.38);
+  transition: opacity 0.15s;
+  margin-top: 2px;
+}
+
+.ln-submit-btn:hover {
+  opacity: 0.9;
+}
+
+/* ── Bantuan ── */
+.ln-help-text {
+  margin-top: 18px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #605c5c;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ln-help-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #41a4ea;
+  padding: 0;
+}
+
+.ln-help-link:hover {
+  text-decoration: underline;
+}
+
+/* ══════════════════════════════════════
+   MOBILE  ≤ 700px
+   ══════════════════════════════════════ */
+
+@media screen and (max-width: 700px) {
+  .ln-root {
+    background: transparent;
+
+    width: 100%;
+    /* Gunakan 100svh sebagai fallback, 100dvh untuk browser modern */
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    height: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    overflow-x: hidden;
+    overflow-y: visible;
+
+    /* Extend konten ke area safe area (notch, status bar, nav bar) */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .ln-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    /* Tidak ada min-height di sini — biarkan konten menentukan tinggi */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 16px 16px 32px;
+    box-sizing: border-box;
+  }
+
+  .ln-left {
+    flex: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0 20px;
+    gap: 6px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .ln-logo-n,
+  .ln-logo-bo {
+    font-size: 64px;
+    letter-spacing: -3px;
+  }
+
+  .ln-logo-cap {
+    width: 88px;
+    height: 80px;
+    margin-top: -6px;
+    object-fit: contain;
+  }
+
+  .ln-tagline {
+    font-size: 14px;
+    text-align: center;
+    color: #605c5c;
+  }
+
+  .ln-card {
+    flex: none;
+    width: 100%;
+    max-width: 315px;
+    margin: 10px auto 32px;
+    padding: 24px 20px 28px;
+    border-radius: 20px;
+    box-sizing: border-box;
+  }
+
+  .ln-input {
+    font-size: 16px;
+  }
+
+  .ln-circle-tl {
+    width: 260px;
+    height: 260px;
+    top: -80px;
+    left: -80px;
+  }
+
+  .ln-circle-br {
+    width: 180px;
+    height: 180px;
+  }
+}
