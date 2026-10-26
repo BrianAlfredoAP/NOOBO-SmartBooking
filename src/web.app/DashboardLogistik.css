@@ -11,10 +11,8 @@
   font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
   background: transparent;
   position: relative;
-  /* Scroll keseluruhan di level root */
-  overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: visible;        /* scroll dihandle body */
 }
 
 /* ── Header ── */
@@ -184,9 +182,9 @@
 .dl-request-card {
   background: #fff;
   border-radius: 16px;
-  padding: 14px 14px 14px 14px;
+  padding: 14px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;      /* semua kolom rata tengah vertikal */
   gap: 12px;
   box-shadow: 0 2px 10px rgba(5,80,180,0.07);
   margin-bottom: 10px;
@@ -222,7 +220,7 @@
 }
 .dl-request-sub {
   font-size: 12px; color: #8098b4;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .dl-request-meta {
@@ -233,9 +231,14 @@
   font-size: 11.5px; color: #8098b4;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.dl-request-footer {
-  display: flex; justify-content: flex-end;
-  margin-top: 8px;
+
+/* Status badge rata kanan sejajar chevron — tidak di footer bawah */
+.dl-request-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .dl-chevron {
@@ -355,11 +358,11 @@
 @media (min-width: 431px) {
   .dl-root {
     width: min(100%, 430px);
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     margin: 0 auto;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;      /* scroll tetap di body → scrollbar pojok kanan layar */
 
     background: linear-gradient(
       180deg,

@@ -296,11 +296,12 @@ export default function DashboardLogistik({ email }: DashboardLogistikProps) {
                   <span className="dl-request-meta-row"><CalIcon /><span>{item.tanggal}</span></span>
                   <span className="dl-request-meta-row"><PeopleIcon /><span>{item.peserta} peserta</span></span>
                 </div>
-                <div className="dl-request-footer">
-                  <StatusBadge status={item.status} />
-                </div>
               </div>
-              <ChevronIcon />
+              {/* Status + chevron rata kanan */}
+              <div className="dl-request-right">
+                <ChevronIcon />
+                <StatusBadge status={item.status} />
+              </div>
             </button>
           ))}
 
