@@ -1,8 +1,10 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  /* Warna ini harus cocok dengan ujung gradasi di Login.css (#87cef5)
-     agar tidak ada gap warna di area browser chrome mobile */
-  --page-background: #87cef5;
-  font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+  font-family: "Plus Jakarta Sans", "Poppins", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -12,29 +14,23 @@
 
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html {
-  height: 100%;
-  background: var(--page-background);
+  min-height: 100%;
 }
 
 body {
   width: 100%;
+  min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh;
+  margin: 0;
   overflow-x: hidden;
-  background: var(--page-background);
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  background: var(--page-background);
 }

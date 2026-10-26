@@ -1,14 +1,17 @@
 import { Login } from "./pages/Login";
 import DashboardPeminjam from "./pages/DashboardPeminjam";
+import { Fsk } from "./pages/peminjam";
 
-// Ganti nilai PAGE untuk preview tampilan yang diinginkan:
-// "login"     → halaman login
-// "dashboard" → dashboard peminjam
-const PAGE = "login";
+const PAGE = "peminjam"; // Change this value to "peminjam" or "dashboard" to test different pages
 
 export default function App() {
+  if (PAGE === "peminjam") {
+    return <Fsk />;
+  }
+
   if (PAGE === "dashboard") {
     return <DashboardPeminjam email="email@university.ac.id" />;
   }
+
   return <Login />;
 }
