@@ -1,0 +1,380 @@
+/* ══════════════════════════════════════
+   Dashboard Logistik Kampus
+   ══════════════════════════════════════ */
+
+.dl-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+  background: transparent;
+  position: relative;
+  /* Scroll keseluruhan di level root */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Header ── */
+.dl-header {
+  position: relative;
+  padding: 52px 20px 36px 24px;
+  min-height: 200px;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dl-notif-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 10;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.90);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 14px rgba(5,80,180,0.13);
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, transform 0.1s;
+}
+.dl-notif-btn:hover  { background: #fff; }
+.dl-notif-btn:active { transform: scale(0.94); }
+
+/* Badge merah notifikasi */
+.dl-notif-badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #e53e3e;
+  border: 2px solid #fff;
+}
+
+.dl-greeting {
+  position: relative;
+  z-index: 2;
+  padding-right: 56px;
+  transform: translateY(15px);
+}
+.dl-greeting-halo {
+  font-size: 14px; font-weight: 400;
+  color: #4a6080; margin: 0 0 4px;
+}
+.dl-greeting-name {
+  font-size: 26px; font-weight: 800;
+  color: #0f2044; margin: 0 0 4px;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+}
+.dl-greeting-role {
+  font-size: 13px; font-weight: 600;
+  color: #057bf8; margin: 0;
+}
+
+/* Ilustrasi hero kanan */
+.dl-hero-img {
+  position: absolute;
+  right: 26px;
+  bottom: 10;
+  width: 170px;
+  pointer-events: none;
+  z-index: 1;
+}
+.dl-hero-img img {
+  width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Panel putih melengkung — div nyata, bukan ::before ── */
+.dl-panel {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  background: #f0f6ff;
+  border-radius: 32px 32px 0 0;
+  margin-top:10px;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+/* ── Main content di dalam panel ── */
+.dl-content {
+  flex: 1;
+  padding: 24px 16px 50px;
+  /* Tidak scroll sendiri — scroll dihandle oleh .dl-root */
+  overflow: visible;
+}
+
+/* ── Section title ── */
+.dl-section-title {
+  font-size: 17px; font-weight: 800;
+  color: #0f2044; margin: 0 0 14px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ── Ringkasan Aktivitas grid 2x2 ── */
+.dl-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.dl-stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(5,80,180,0.07);
+  box-sizing: border-box;
+}
+
+.dl-stat-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.dl-stat-icon--red    { background: #fff0f0; }
+.dl-stat-icon--blue   { background: #edf4ff; }
+.dl-stat-icon--green  { background: #edfaf3; }
+.dl-stat-icon--yellow { background: #fffbea; }
+
+.dl-stat-info { display: flex; flex-direction: column; gap: 2px; }
+.dl-stat-number {
+  font-size: 22px; font-weight: 800;
+  color: #0f2044; line-height: 1;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-stat-label {
+  font-size: 11.5px; font-weight: 500;
+  color: #8098b4;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.3;
+}
+
+/* ── Section header dengan lihat semua ── */
+.dl-section-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+.dl-lihat-semua {
+  display: flex; align-items: center; gap: 3px;
+  background: transparent; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: #057bf8;
+  padding: 0; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: opacity 0.15s;
+}
+.dl-lihat-semua:hover { opacity: 0.72; }
+
+/* ── Pengajuan card ── */
+.dl-request-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 14px 14px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(5,80,180,0.07);
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.dl-request-card:hover  { box-shadow: 0 4px 18px rgba(5,80,180,0.13); }
+.dl-request-card:active { transform: scale(0.99); }
+
+.dl-request-thumb {
+  width: 72px; height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #d4e8f7;
+  flex-shrink: 0;
+}
+.dl-request-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+
+.dl-request-info {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dl-request-title {
+  font-size: 14px; font-weight: 700;
+  color: #0f2044; margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-request-sub {
+  font-size: 12px; color: #8098b4;
+  margin: 0 0 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-request-meta {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.dl-request-meta-row {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #8098b4;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-request-footer {
+  display: flex; justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.dl-chevron {
+  flex-shrink: 0;
+  display: flex; align-items: center;
+  padding-left: 2px;
+}
+
+/* ── Status badge ── */
+.dl-badge {
+  display: inline-flex; align-items: center;
+  padding: 5px 14px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 700;
+  white-space: nowrap;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-badge--orange  { background: #fff3e0; color: #e07b00; border: 1px solid #ffd59e; }
+.dl-badge--green   { background: #e8faf2; color: #1a9e5c; border: 1px solid #a7eacb; }
+.dl-badge--red     { background: #ffeaea; color: #e53e3e; border: 1px solid #ffc0c0; }
+.dl-badge--blue    { background: #e8f3ff; color: #057bf8; border: 1px solid #b3d9ff; }
+
+/* ── Perlu Perhatian list ── */
+.dl-attention-list {
+  display: flex; flex-direction: column;
+  gap: 10px; margin-bottom: 20px;
+}
+
+.dl-attention-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 10px rgba(5,80,180,0.07);
+  box-sizing: border-box;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.dl-attention-card:hover  { box-shadow: 0 4px 18px rgba(5,80,180,0.13); }
+.dl-attention-card:active { transform: scale(0.99); }
+
+.dl-attention-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #fff0f0;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.dl-attention-icon--yellow { background: #fffbea; }
+
+.dl-attention-info { flex: 1; min-width: 0; }
+.dl-attention-title {
+  font-size: 14px; font-weight: 700;
+  color: #0f2044; margin: 0 0 2px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-attention-sub {
+  font-size: 12px; color: #8098b4; margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ── Bottom nav ── */
+.dl-bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 68px; background: #fff;
+  border-top: 1px solid #ddeeff;
+  display: flex; justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 -3px 16px rgba(5,80,180,0.08);
+  padding: 0 4px; box-sizing: border-box;
+}
+.dl-nav-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  background: transparent; border: none; cursor: pointer;
+  padding: 6px 10px 4px; border-radius: 12px;
+  min-width: 52px; transition: background 0.15s;
+  position: relative;
+}
+.dl-nav-item:hover { background: #f0f7ff; }
+.dl-nav-label {
+  font-size: 10px; font-weight: 500; color: #b0bec5;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.dl-nav-item--active .dl-nav-label { color: #057bf8; font-weight: 700; }
+
+/* Badge angka di nav item */
+.dl-nav-badge {
+  position: absolute;
+  top: 2px; right: 6px;
+  min-width: 16px; height: 16px;
+  border-radius: 99px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border: 2px solid #fff;
+}
+
+/* ══════════════════════════════════════
+   DESKTOP ≥ 431px — sama seperti dashboard peminjam
+   ══════════════════════════════════════ */
+@media (min-width: 431px) {
+  html:has(.dl-root),
+  body:has(.dl-root),
+  #root:has(.dl-root) {
+    background: #ffffff !important;
+  }
+
+@media (min-width: 431px) {
+  .dl-root {
+    width: min(100%, 430px);
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    background: linear-gradient(
+      180deg,
+      #dff3ff 0%,
+      #b6e6ff 50%,
+      #8fd7fa 100%
+    );
+
+    box-shadow: 0 20px 60px rgba(5,80,180,0.12);
+  }
+}
+  .dl-bottom-nav {
+    left: 50%;
+    right: auto;
+    width: min(430px, 100vw);
+    transform: translateX(-50%);
+  }
+}

@@ -182,9 +182,7 @@ function CtaButton() {
   );
 }
 
-/* ══════════════════════════════════════
-   MAIN COMPONENT
-   ══════════════════════════════════════ */
+/* MAIN COMPONENT*/
 export default function DashboardPeminjam({ email }: DashboardPeminjamProps) {
   const [activeNav, setActiveNav] = useState<NavItem["id"]>("beranda");
   const [showAll, setShowAll] = useState(false);
@@ -254,7 +252,7 @@ export default function DashboardPeminjam({ email }: DashboardPeminjamProps) {
           <div className="db-section-header">
             <h2 className="db-section-title">Peminjaman Terbaru</h2>
             <button className="db-lihat-semua" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? "Tampilkan Lebih Sedikit" : "Lihat Semua"}
+              {showAll ? "Lebih Sedikit" : "Lihat Semua"}
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M4 7H10M7.5 4.5L10 7L7.5 9.5" stroke="#057bf8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
