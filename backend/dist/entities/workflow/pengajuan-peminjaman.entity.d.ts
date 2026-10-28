@@ -1,0 +1,30 @@
+export declare class PengajuanPeminjaman {
+    private _id_pengajuan;
+    private _id_fsk;
+    private _id_paket;
+    private _id_pembina;
+    private _email_pembina;
+    private _id_aturan;
+    private _setuju_syarat;
+    private _waktu_setuju;
+    private _nomor_pengajuan;
+    private _tanggal_pengajuan;
+    private _status;
+    private _catatan;
+    constructor(id_pengajuan: number, id_fsk: number, id_paket: number, id_pembina: number, email_pembina: string, id_aturan: number, setuju_syarat: boolean, waktu_setuju: Date, nomor_pengajuan: string, tanggal_pengajuan?: Date, status?: string, catatan?: string);
+    get id_pengajuan(): number;
+    get id_fsk(): number;
+    get id_paket(): number;
+    get id_pembina(): number;
+    get email_pembina(): string;
+    get id_aturan(): number;
+    get setuju_syarat(): boolean;
+    get waktu_setuju(): Date;
+    get nomor_pengajuan(): string;
+    get tanggal_pengajuan(): Date;
+    get status(): string;
+    get catatan(): string;
+    submit(): boolean;
+    updateStatus(status: string): boolean;
+    viewHistory(): Array<object>;
+}
