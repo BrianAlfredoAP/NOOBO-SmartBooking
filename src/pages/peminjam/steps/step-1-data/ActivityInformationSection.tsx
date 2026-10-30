@@ -7,16 +7,14 @@ const initialActivity = {
 };
 
 export const ActivityInformationSection = () => {
-  const [name, setName] = useState(initialActivity.name);
-  const [purpose, setPurpose] = useState(initialActivity.purpose);
-  const [participants, setParticipants] = useState(
-    initialActivity.participants,
-  );
+  const [name, setName] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [participants, setParticipants] = useState("");
 
   return (
     <section
       aria-labelledby="activity-information-title"
-      className="top-[230px] flex flex-col w-full items-start gap-4 p-4 absolute left-px bg-slate-50 rounded-2xl border border-solid border-slate-100 shadow-[0px_1px_2px_#0000000d]"
+      className="relative flex w-full flex-col items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-solid border-slate-100 shadow-[0px_1px_2px_#0000000d]"
     >
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
         <div className="flex w-10 h-10 items-center justify-center relative bg-blue-50 rounded-xl">
@@ -47,7 +45,7 @@ export const ActivityInformationSection = () => {
           </div>
         </div>
       </header>
-      <div className="flex flex-col items-start gap-3.5 relative self-stretch w-full flex-[0_0_auto]">
+      <div className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto]">
         <div className="flex flex-col items-start gap-1.5 relative self-stretch w-full flex-[0_0_auto]">
           <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
             <label
@@ -58,14 +56,15 @@ export const ActivityInformationSection = () => {
             </label>
           </div>
           <div className="flex items-start justify-center px-3.5 py-2.5 relative self-stretch w-full flex-[0_0_auto] bg-[#f8fafc80] rounded-xl overflow-hidden border border-solid border-slate-200">
-            <div className="flex flex-col items-start relative flex-1 grow overflow-scroll">
+            <div className="flex flex-col items-start relative flex-1 grow overflow-hidden">
               <input
                 id="activity-name"
                 name="activityName"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="relative flex items-center self-stretch w-full bg-transparent border-0 p-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+                placeholder="TEMATICS 2026"
+                className="relative flex items-center self-stretch w-full bg-transparent border-0 p-0 outline-none text-sm font-medium text-slate-800 placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -80,26 +79,28 @@ export const ActivityInformationSection = () => {
             </label>
           </div>
           <div className="flex flex-col items-start gap-[5px] relative self-stretch w-full flex-[0_0_auto]">
-            <div className="h-[54px] justify-center pt-2.5 pb-[25px] px-3.5 bg-[#f8fafc80] rounded-xl overflow-scroll border border-solid border-slate-200 flex items-start relative self-stretch w-full">
-              <div className="flex flex-col items-start relative flex-1 grow">
+            <div className="flex w-full flex-col gap-1.5">
+              <div className="h-[80px] w-full rounded-xl border border-slate-200 bg-[#f8fafc80] px-3.5 py-2.5">
                 <textarea
                   id="activity-purpose"
                   name="activityPurpose"
                   maxLength={500}
                   value={purpose}
                   onChange={(event) => setPurpose(event.target.value)}
-                  className="relative flex items-center self-stretch w-full h-5 resize-none overflow-hidden bg-transparent border-0 p-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+                  placeholder="Ospek Jurusan Informatika 2026"
+                  className="!m-0 !block h-full w-full resize-none !border-0 !rounded-none !bg-transparent !p-0 text-sm font-medium leading-5 text-slate-800 outline-none ring-0 focus:!border-0 focus:ring-0 placeholder:text-slate-400"
                 />
               </div>
-            </div>
-            <div className="flex flex-col items-end pt-0 pb-0.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex items-center justify-end [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-400 text-[11px] text-right tracking-[-0.28px] leading-[16.5px] whitespace-nowrap relative w-fit mt-[-1.00px]">
-                {purpose.length}/500
+
+              <div className="flex w-full justify-end">
+                <span className="text-[11px] leading-4 text-slate-400">
+                  {purpose.length}/500
+                </span>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-start gap-1.5 relative self-stretch w-full flex-[0_0_auto]">
+        <div className="-mt-4 flex flex-col items-start gap-1.5 relative self-stretch w-full flex-[0_0_auto]">
           <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
             <label
               htmlFor="activity-participants"
@@ -112,15 +113,16 @@ export const ActivityInformationSection = () => {
             <div className="flex flex-col items-start pl-3.5 pr-14 py-2.5 relative flex-1 grow bg-[#f8fafc80] rounded-xl overflow-hidden border border-solid border-slate-200">
               <div className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col items-start relative flex-1 grow">
-                  <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] overflow-scroll">
+                  <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] overflow-hidden">
                     <input
                       id="activity-participants"
                       name="activityParticipants"
                       type="number"
-                      min="0"
+                      min="1"
                       value={participants}
                       onChange={(event) => setParticipants(event.target.value)}
-                      className="relative flex items-center self-stretch w-full bg-transparent border-0 p-0 outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+                      placeholder="150"
+                      className="relative flex items-center self-stretch w-full bg-transparent border-0 p-0 outline-none text-sm font-medium text-slate-800 placeholder:text-slate-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                   </div>
                 </div>

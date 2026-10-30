@@ -9,16 +9,14 @@ const organizations = [
 ];
 
 export const BorrowingSection = (): ReactElement => {
-  const [fullName, setFullName] = useState("Brian HUMAS");
-  const [organization, setOrganization] = useState(
-    "Himpunan Mahasiswa Informatika",
-  );
-  const [phoneNumber, setPhoneNumber] = useState("+62XXXXXXXXXX");
+  const [fullName, setFullName] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   return (
     <section
       aria-labelledby="borrower-information-title"
-      className="flex flex-col w-[390px] h-[792px] items-start gap-4 p-4 absolute top-[-80px] left-0 bg-slate-50 rounded-2xl overflow-hidden border border-solid border-slate-100 shadow-[0px_1px_2px_#0000000d]"
+      className="relative flex h-auto w-full flex-col items-start gap-4 p-4 rounded-2xl border border-solid border-slate-100 bg-slate-50 shadow-[0px_1px_2px_#0000000d]"
     >
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
         <div className="flex w-10 h-10 items-center justify-center relative bg-blue-50 rounded-xl">
@@ -65,7 +63,8 @@ export const BorrowingSection = (): ReactElement => {
               type="text"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              className="relative flex items-center self-stretch w-full min-w-0 bg-transparent outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+              placeholder="Brian Alfredo"
+              className="relative flex items-center self-stretch w-full min-w-0 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
             />
           </div>
         </div>
@@ -87,15 +86,18 @@ export const BorrowingSection = (): ReactElement => {
                 name="organization"
                 value={organization}
                 onChange={(event) => setOrganization(event.target.value)}
-                className="relative flex items-center self-stretch mt-[-1.00px] w-full min-w-0 appearance-none bg-transparent outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+                className="relative flex items-center self-stretch mt-[-1px] w-full min-w-0 appearance-none bg-transparent outline-none text-sm text-slate-800"
               >
+                <option value="" disabled>
+                  Pilih Organisasi / Unit Kegiatan
+                </option>
+
                 {organizations.map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
               </select>
-
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
           </div>
@@ -136,11 +138,14 @@ export const BorrowingSection = (): ReactElement => {
                 id="borrower-phone"
                 name="phoneNumber"
                 type="tel"
-                inputMode="tel"
-                autoComplete="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
                 value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                className="relative flex items-center self-stretch w-full min-w-0 bg-transparent outline-none [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-800 text-sm tracking-[0] leading-5"
+                onChange={(event) =>
+                  setPhoneNumber(event.target.value.replace(/\D/g, ""))
+                }
+                placeholder="8XXXXXXXXXX"
+                className="relative flex items-center self-stretch w-full min-w-0 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
               />
             </div>
           </div>

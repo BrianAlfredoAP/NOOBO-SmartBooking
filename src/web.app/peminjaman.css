@@ -144,3 +144,66 @@
     transform: translateY(calc(-100% - var(--gap)));
   }
 }
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+  background: #f1f5f9;
+}
+
+#root {
+  display: block;
+  min-height: 100dvh;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+  background: #f1f5f9;
+}
+
+#root {
+  display: block;
+  min-height: 100dvh;
+}
+
+/* Memastikan area formulir bisa di-scroll */
+form,
+[role="region"] {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar khusus textarea */
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+

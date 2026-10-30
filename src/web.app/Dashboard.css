@@ -110,9 +110,7 @@
   isolation: isolate;
   padding: 22px 16px 90px;
   margin-top: -10px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  /* background transparan agar ::before yang jadi panel */
+  overflow: visible;          /* scroll dihandle body */
   background: transparent;
 }
 
@@ -278,12 +276,12 @@
 @media (min-width: 431px) {
   .db-root {
     width: min(100%, 430px);
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     margin: 0 auto;
     flex-direction: column;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;      /* scroll di body → scrollbar pojok kanan layar */
 
     /* Gradasi hanya untuk frame di tengah desktop */
     background: linear-gradient(

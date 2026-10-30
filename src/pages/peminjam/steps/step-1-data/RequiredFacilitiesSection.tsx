@@ -36,7 +36,7 @@ export const RequiredFacilitiesSection = (): ReactElement => {
   return (
     <section
       aria-labelledby="required-facilities-title"
-      className="absolute left-0 top-[485px] flex w-full flex-col gap-3 rounded-2xl border border-solid border-slate-100 bg-slate-50 p-4 shadow-[0px_1px_2px_#0000000d]"
+      className="relative flex w-full flex-col gap-3 rounded-2xl border border-solid border-slate-100 bg-slate-50 p-4 shadow-[0px_1px_2px_#0000000d]"
     >
       <header className="flex w-full items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-2xl font-medium leading-none text-blue-600">

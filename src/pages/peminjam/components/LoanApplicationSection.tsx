@@ -11,7 +11,7 @@ const steps = [
 export const LoanApplicationSection = (): ReactElement => {
   return (
     <nav
-      className="relative z-10 w-full bg-white px-5 pt-2 pb-3"
+      className="relative w-full bg-white px-5 pt-2 pb-4"
       aria-label="Tahapan pengajuan peminjaman"
     >
       <div className="relative grid grid-cols-4">

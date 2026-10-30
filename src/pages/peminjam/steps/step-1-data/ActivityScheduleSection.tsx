@@ -2,14 +2,14 @@
 import { useState } from "react";
 
 export const ActivityScheduleSection = () => {
-  const [activityDate, setActivityDate] = useState("12 Desember 2026");
+  const [activityDate, setActivityDate] = useState("2026-12-12");
   const [startTime, setStartTime] = useState("10:00");
   const [endTime, setEndTime] = useState("16:00");
 
   return (
     <section
       aria-labelledby="activity-schedule-title"
-      className="absolute left-0 top-[690px] flex w-full flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm"
+      className="relative flex w-full flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm"
     >
       <header className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -38,18 +38,26 @@ export const ActivityScheduleSection = () => {
         >
           Tanggal Kegiatan
         </label>
-        <div className="flex h-[54px] items-center gap-3 rounded-xl border border-slate-200 bg-transparent px-3.5">
-          <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.8">
+
+        <div className="relative flex h-[54px] items-center gap-3 rounded-xl border border-slate-200 bg-transparent px-3.5">
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4 shrink-0 text-slate-500 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
             <rect x="3" y="5" width="18" height="16" rx="2" />
             <path d="M16 3v4M8 3v4M3 10h18" />
           </svg>
+
           <input
             id="activity-date"
             name="activityDate"
-            type="text"
+            type="date"
             value={activityDate}
             onChange={(event) => setActivityDate(event.target.value)}
-            className="w-full min-w-0 bg-transparent text-sm text-slate-800 outline-none"
+            className="h-full w-full min-w-0 cursor-pointer bg-transparent text-sm font-medium text-slate-800 outline-none"
           />
         </div>
       </div>

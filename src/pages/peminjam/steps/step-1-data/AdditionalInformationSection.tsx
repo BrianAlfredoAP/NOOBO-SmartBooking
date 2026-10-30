@@ -4,7 +4,7 @@ export const AdditionalInformationSection = () => {
   const [additionalInformation, setAdditionalInformation] = useState("");
 
   return (
-    <section className="h-[198px] top-[980px] flex flex-col w-full items-start gap-4 p-4 absolute left-px bg-slate-50 rounded-2xl border border-solid border-slate-100 shadow-[0px_1px_2px_#0000000d]">
+    <section className="relative flex h-auto w-full flex-col items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-solid border-slate-100 shadow-[0px_1px_2px_#0000000d]">
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
         <div className="flex w-10 h-10 items-center justify-center relative bg-blue-50 rounded-xl">
           <div className="relative w-5 h-5 flex items-center justify-center">
@@ -39,12 +39,8 @@ export const AdditionalInformationSection = () => {
         </div>
       </header>
 
-      <div className="flex-col gap-2.5 flex-[0_0_auto] mb-[-7.00px] flex items-start relative self-stretch w-full">
-        <div className="justify-center pt-2.5 pb-[30px] px-3.5 flex-[0_0_auto] bg-transparent overflow-scroll border border-solid border-slate-200 flex items-start relative self-stretch w-full">
-          <label htmlFor="additional-information" className="sr-only">
-            Informasi tambahan
-          </label>
-
+      <div className="flex w-full flex-col gap-1.5">
+        <div className="h-[112px] w-full rounded-xl border border-slate-200 bg-[#f8fafc80] px-3.5 py-2.5">
           <textarea
             id="additional-information"
             name="additionalInformation"
@@ -53,18 +49,18 @@ export const AdditionalInformationSection = () => {
             maxLength={500}
             aria-describedby="additional-information-counter"
             placeholder={"Contoh: susunan acara, kebutuhan khusus,\ndll."}
-            className="flex min-h-0 h-full w-full flex-1 grow resize-none overflow-hidden border-0 bg-transparent p-0 [font-family:'Plus_Jakarta_Sans-Regular',Helvetica] font-normal text-slate-400 text-sm tracking-[0] leading-5 outline-none placeholder:text-slate-400"
+            className="block h-full w-full resize-none overflow-y-auto overflow-x-hidden border-0 bg-transparent p-0 text-sm font-medium leading-5 text-slate-800 outline-none placeholder:text-slate-400"
           />
         </div>
 
-        <div className="flex flex-col items-end gap-[5px] pt-[5px] pb-0.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-          <div
+        <div className="flex w-full justify-end">
+          <span
             id="additional-information-counter"
             aria-live="polite"
-            className="flex items-center justify-end [font-family:'Plus_Jakarta_Sans-Medium',Helvetica] font-medium text-slate-400 text-[11px] text-right tracking-[-0.28px] leading-[16.5px] whitespace-nowrap relative w-fit mt-[-1.00px]"
+            className="text-[11px] leading-4 text-slate-400"
           >
             {additionalInformation.length}/500
-          </div>
+          </span>
         </div>
       </div>
     </section>
