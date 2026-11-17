@@ -44,7 +44,7 @@ export function buildRecommendations(form) {
       label,
       quantity: Number(form.equipment[id]),
       unit,
-      simulatedStock: stock,
+      simulatedStock: getSimulatedStock(id, stock),
       selected: true,
     }))
 
@@ -59,7 +59,8 @@ export function buildRecommendations(form) {
     })
   }
 
-  const rooms = demoRooms
+  const currentRooms = getCurrentRooms()
+  const rooms = currentRooms
     .map((room) => {
       const fits = room.capacity >= participants
       const available = room.available && room.condition === 'Baik'
@@ -78,4 +79,20 @@ export function buildRecommendations(form) {
     .sort((a, b) => b.score - a.score)
 
   return { rooms, logistics: requested }
+}
+
+function getCurrentRooms() {
+  try {
+    const saved = window.localStorage.getItem('noobo-logistik-rooms')
+    return saved ? JSON.parse(saved).map((room) => ({ ...room, building: `${room.building} · Lantai ${room.floor}` })) : demoRooms
+  } catch { return demoRooms }
+}
+
+function getSimulatedStock(id, fallback) {
+  try {
+    const saved = window.localStorage.getItem('noobo-logistik-inventory')
+    if (!saved) return fallback
+    const item = JSON.parse(saved).find((entry) => entry.id === id)
+    return item?.available && item.condition === 'Baik' ? Number(item.stock) : 0
+  } catch { return fallback }
 }

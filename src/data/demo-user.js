@@ -1,3 +1,5 @@
+import { demoLogistikUser } from './logistik-demo.js'
+
 // Frontend-only demo credentials. Never use these accounts or client-side checks in production.
 export const demoUser = Object.freeze({
   name: 'Aria Restu',
@@ -22,10 +24,12 @@ export function validateDemoLoginInput({ email, password }) {
   return errors
 }
 
-export function checkDemoCredentials({ email, password }) {
-  const validEmail = email.trim().toLowerCase() === demoUser.email.toLowerCase()
-  const validPassword = password === demoUser.password
+export function checkDemoCredentials({ email, password, role }) {
+  const account = role === 'logistik' ? demoLogistikUser : role === demoUser.role ? demoUser : null
+  if (!account) return { ok: false, reason: 'role-unavailable' }
+  const validEmail = email.trim().toLowerCase() === account.email.toLowerCase()
+  const validPassword = password === account.password
   return validEmail && validPassword
-    ? { ok: true, user: { name: demoUser.name, email: demoUser.email, role: demoUser.role } }
+    ? { ok: true, user: { name: account.name, email: account.email, role: account.role } }
     : { ok: false, reason: 'invalid-credentials' }
 }

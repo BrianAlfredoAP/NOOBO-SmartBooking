@@ -1,13 +1,20 @@
 import { useId, useState } from 'react'
-import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowRight, Building2, Eye, EyeOff, UserRound } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
 import { checkDemoCredentials, demoUser, validateDemoLoginInput } from '../../data/demo-user.js'
+import { demoLogistikUser } from '../../data/logistik-demo.js'
 import { useAuth } from '../../context/auth-context.js'
 import { Navigate, useNavigate } from 'react-router'
 import nooboLogo from '../../assets/logo.png'
 
+const roles = [
+  { id: 'peminjam', label: 'Peminjam', icon: UserRound },
+  { id: 'logistik', label: 'Logistik Kampus', icon: Building2 },
+]
+
 function LoginPage() {
+  const [role, setRole] = useState('peminjam')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -36,16 +43,17 @@ function LoginPage() {
 
     const submittedEmail = email
     const submittedPassword = password
+    const submittedRole = role
     setLoading(true)
     window.setTimeout(() => {
       setLoading(false)
-      const result = checkDemoCredentials({ email: submittedEmail, password: submittedPassword })
+      const result = checkDemoCredentials({ email: submittedEmail, password: submittedPassword, role: submittedRole })
       if (!result.ok) {
         setLoginMessageError(true)
         setLoginMessage('Email atau kata sandi tidak sesuai dengan akun demonstrasi.')
       } else {
         startDemoSession(result.user)
-        navigate('/peminjam', { replace: true })
+        navigate(result.user.role === 'logistik' ? '/logistik' : '/peminjam', { replace: true })
       }
       setPassword('')
       setPasswordTouched(false)
@@ -53,6 +61,7 @@ function LoginPage() {
   }
 
   if (user?.role === 'peminjam') return <Navigate to="/peminjam" replace />
+  if (user?.role === 'logistik') return <Navigate to="/logistik" replace />
 
   return (
     <main className="auth-page">
@@ -67,6 +76,29 @@ function LoginPage() {
 
       <section aria-label="Form login NOOBO" className="auth-panel">
         <form className="auth-form" noValidate onSubmit={handleSubmit}>
+          <fieldset className="auth-role-group">
+            <legend>Masuk sebagai</legend>
+            <div className="auth-role-options">
+              {roles.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  aria-pressed={role === id}
+                  className={`auth-role-option ${role === id ? 'is-selected' : ''}`}
+                  disabled={loading}
+                  onClick={() => {
+                    setRole(id)
+                    setLoginMessage('')
+                    setLoginMessageError(false)
+                  }}
+                  type="button"
+                >
+                  <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
           <Input
             autoComplete="username"
             error={submitted || emailTouched ? emailError : ''}
@@ -77,7 +109,7 @@ function LoginPage() {
               setLoginMessage('')
               setLoginMessageError(false)
             }}
-            placeholder={demoUser.email}
+            placeholder={role === 'logistik' ? demoLogistikUser.email : demoUser.email}
             required
             type="email"
             value={email}

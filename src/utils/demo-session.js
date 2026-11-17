@@ -1,4 +1,5 @@
 import { demoUser } from '../data/demo-user.js'
+import { demoLogistikUser } from '../data/logistik-demo.js'
 
 const SESSION_KEY = 'noobo-demo-session'
 
@@ -7,11 +8,12 @@ export function readDemoSession() {
     const saved = window.sessionStorage.getItem(SESSION_KEY)
     if (!saved) return null
     const session = JSON.parse(saved)
-    if (session.name !== demoUser.name || session.email !== demoUser.email || session.role !== demoUser.role) {
+    const account = session.role === 'logistik' ? demoLogistikUser : demoUser
+    if (session.name !== account.name || session.email !== account.email || session.role !== account.role) {
       window.sessionStorage.removeItem(SESSION_KEY)
       return null
     }
-    return { name: demoUser.name, email: demoUser.email, role: demoUser.role }
+    return { name: account.name, email: account.email, role: account.role }
   } catch {
     return null
   }

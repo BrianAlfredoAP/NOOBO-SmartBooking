@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import LoginPage from '../pages/auth/LoginPage.jsx'
+import LogistikWorkspacePage from '../pages/logistik/LogistikWorkspacePage.jsx'
 import PeminjamHomePage from '../pages/peminjam/PeminjamHomePage.jsx'
 import FskPage from '../pages/peminjam/FskPage.jsx'
 import RecommendationPage from '../pages/peminjam/RecommendationPage.jsx'
@@ -9,6 +10,8 @@ import DocumentsPage from '../pages/peminjam/DocumentsPage.jsx'
 import PeminjamProfilePage from '../pages/peminjam/PeminjamProfilePage.jsx'
 import ApplicationConfirmationPage from '../pages/peminjam/ApplicationConfirmationPage.jsx'
 import ApplicationReceivedPage from '../pages/peminjam/ApplicationReceivedPage.jsx'
+import PembinaApprovalPage from '../pages/pembina/PembinaApprovalPage.jsx'
+import LogistikLayout from '../components/layout/LogistikLayout.jsx'
 import PeminjamLayout from '../components/layout/PeminjamLayout.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
 
@@ -38,5 +41,31 @@ export const router = createBrowserRouter([
       { path: 'ajukan/diterima', element: <ApplicationReceivedPage /> },
     ],
   },
+  {
+    path: '/logistik',
+    element: <LogistikLayout />,
+    children: [
+      { index: true, element: <LogistikWorkspacePage section="dashboard" /> },
+      { path: 'ruangan', element: <LogistikWorkspacePage section="rooms" /> },
+      { path: 'data', element: <LogistikWorkspacePage section="data" /> },
+      { path: 'ruangan/:id', element: <LogistikWorkspacePage section="room-detail" /> },
+      { path: 'inventaris', element: <LogistikWorkspacePage section="inventory" /> },
+      { path: 'inventaris/:id', element: <LogistikWorkspacePage section="inventory-detail" /> },
+      { path: 'pengajuan', element: <LogistikWorkspacePage section="applications" /> },
+      { path: 'pengajuan/:id', element: <LogistikWorkspacePage section="application-detail" /> },
+      { path: 'dokumen', element: <LogistikWorkspacePage section="documents" /> },
+      { path: 'dokumen/sbpg/:id', element: <LogistikWorkspacePage section="return-document" /> },
+      { path: 'dokumen/:id', element: <LogistikWorkspacePage section="document-detail" /> },
+      { path: 'pengembalian', element: <LogistikWorkspacePage section="returns" /> },
+      { path: 'pengembalian/:id', element: <LogistikWorkspacePage section="return-detail" /> },
+      { path: 'pemeriksaan', element: <LogistikWorkspacePage section="returns" /> },
+      { path: 'pemeriksaan/:id', element: <LogistikWorkspacePage section="return-detail" /> },
+      { path: 'profil', element: <LogistikWorkspacePage section="profile" /> },
+      { path: 'profil/informasi', element: <LogistikWorkspacePage section="profile-info" /> },
+      { path: 'profil/bantuan', element: <LogistikWorkspacePage section="profile-help" /> },
+      { path: 'profil/tentang', element: <LogistikWorkspacePage section="profile-about" /> },
+    ],
+  },
+  { path: '/pembina/approval/:token', element: <PembinaApprovalPage /> },
   { path: '*', element: <NotFoundPage /> },
 ])
