@@ -1,9 +1,10 @@
 import { useId, useState } from 'react'
-import { ArrowRight, Eye, EyeOff, LogOut } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
 import { checkDemoCredentials, demoUser, validateDemoLoginInput } from '../../data/demo-user.js'
 import { useAuth } from '../../context/auth-context.js'
+import { Navigate, useNavigate } from 'react-router'
 import nooboLogo from '../../assets/logo.png'
 
 function LoginPage() {
@@ -17,7 +18,8 @@ function LoginPage() {
   const [loginMessage, setLoginMessage] = useState('')
   const [loginMessageError, setLoginMessageError] = useState(false)
   const [helpMessage, setHelpMessage] = useState('')
-  const { user, startDemoSession, endDemoSession } = useAuth()
+  const { user, startDemoSession } = useAuth()
+  const navigate = useNavigate()
   const passwordId = useId()
   const passwordErrorId = `${passwordId}-error`
 
@@ -43,11 +45,14 @@ function LoginPage() {
         setLoginMessage('Email atau kata sandi tidak sesuai dengan akun demonstrasi.')
       } else {
         startDemoSession(result.user)
+        navigate('/peminjam', { replace: true })
       }
       setPassword('')
       setPasswordTouched(false)
     }, 550)
   }
+
+  if (user?.role === 'peminjam') return <Navigate to="/peminjam" replace />
 
   return (
     <main className="auth-page">
@@ -61,16 +66,6 @@ function LoginPage() {
       </header>
 
       <section aria-label="Form login NOOBO" className="auth-panel">
-        {user ? (
-          <div className="auth-form">
-            <h1 className="auth-session-title">Anda sudah masuk</h1>
-            <p className="auth-session-email">{user.name} · {user.email}</p>
-            <Button className="auth-submit" onClick={endDemoSession} size="lg" type="button" variant="secondary">
-              <span>Keluar</span>
-              <LogOut size={17} aria-hidden="true" />
-            </Button>
-          </div>
-        ) : (
         <form className="auth-form" noValidate onSubmit={handleSubmit}>
           <Input
             autoComplete="username"
@@ -136,15 +131,14 @@ function LoginPage() {
             {loginMessage}
           </p>
         </form>
-        )}
 
-        {!user && <p className="auth-help">
+        <p className="auth-help">
           <span>Butuh Bantuan?</span>{' '}
           <button className="auth-help-link" onClick={() => setHelpMessage('Kontak layanan bantuan belum tersedia.')} type="button">
             Kontak Kami
           </button>
-        </p>}
-        {!user && helpMessage && <p className="auth-help-feedback" role="status">{helpMessage}</p>}
+        </p>
+        {helpMessage && <p className="auth-help-feedback" role="status">{helpMessage}</p>}
       </section>
     </main>
   )
