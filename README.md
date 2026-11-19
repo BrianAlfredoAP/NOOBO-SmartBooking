@@ -1,44 +1,87 @@
-# NOOBO-SmartBooking
+# NOOBO SmartBooking
 
-**Sistem Peminjaman Ruangan dan Logistik Kampus Berbasis Web dengan Rekomendasi AI.**
-
-NOOBO adalah aplikasi berbasis web yang mempermudah proses peminjaman ruangan dan fasilitas logistik kampus. Sistem ini menyediakan rekomendasi fasilitas berdasarkan kebutuhan kegiatan, kapasitas peserta, jadwal, dan ketersediaan fasilitas.
-
-## Fitur Utama
-- Peminjaman ruangan dan logistik kampus.
-- Rekomendasi fasilitas berbasis AI.
-- Pengelolaan inventaris dan jadwal peminjaman.
-- Persetujuan pengajuan peminjaman.
-- Pencatatan peminjaman dan pengembalian.
+NOOBO adalah aplikasi Smart Booking Tel-U untuk mendukung peminjaman ruangan dan logistik kampus. Repository ini mengelompokkan frontend, backend, acuan database, dokumentasi, dan referensi desain dalam satu monorepo.
 
 ## Teknologi
-- React.js
-- Vite
-- CSS / Tailwind CSS
 
-## Menjalankan Proyek
+- **Frontend:** React 19, Vite 8, JavaScript JSX, Tailwind CSS 4, React Router, Lucide React.
+- **Backend:** NestJS 12, TypeScript, REST API, Vitest, Supertest.
+- **Database:** MySQL Server 8.4.11, schema `smartbooking_db`; backend memakai `mysql2` connection pool.
+
+## Struktur Monorepo
+
+```text
+frontend/          Aplikasi React dan konfigurasi Vite
+backend/           Aplikasi NestJS, konfigurasi, dan pengujian
+database/          schema.sql dan seed.sql sebagai acuan resmi
+docs/              Dokumentasi dan notulensi
+design-reference/  Referensi desain jika tersedia
+```
+
+Frontend dan backend merupakan aplikasi terpisah dengan dependency dan lockfile masing-masing. Frontend belum dihubungkan ke REST API. Backend membuka koneksi MySQL saat proses NestJS dimulai; `UsersService` masih memakai data sementara dalam memory dan belum membaca tabel `users`.
+
+## Persiapan Database
+
+Database lokal harus tersedia dengan nama `smartbooking_db` di MySQL `127.0.0.1:3306`. File `database/schema.sql` dan `database/seed.sql` adalah acuan resmi, dan tidak dijalankan otomatis oleh aplikasi.
+
+Untuk menyiapkan database anggota tim melalui MySQL Workbench:
+
+1. Buat/pilih schema `smartbooking_db`.
+2. Buka dan jalankan `database/schema.sql`.
+3. Buka dan jalankan `database/seed.sql` setelah schema berhasil dibuat.
+4. Isi kredensial koneksi lokal di `backend/.env`.
+
+Periksa isi seed sebelum menjalankannya pada database yang sudah berisi data. Backend tidak menjalankan migrasi, `DROP`, seed, atau pembuatan tabel otomatis.
+
+## Menjalankan Frontend
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-## Status
-Dalam pengembangan (*In Development*).
-=======
-# React + Vite
+Validasi frontend:
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+```bash
+cd frontend
+npm run build
+npm run lint
+```
 
-Currently, two official plugins are available:
+`frontend/.env.example` hanya berisi pengaturan client Vite, tanpa secret.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Menjalankan Backend dan MySQL
 
-## React Compiler
+```bash
+cd backend
+npm install
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Salin `backend/.env.example` menjadi `backend/.env`, lalu isi `DB_PASSWORD` secara manual dengan password MySQL lokal. Nilai contoh lainnya adalah `PORT=3000`, `NODE_ENV=development`, `DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_USER=root`, dan `DB_NAME=smartbooking_db`. File `.env` diabaikan Git.
 
-## Expanding the ESLint configuration
+Jalankan backend:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd backend
+npm run start:dev
+```
+
+Saat startup, backend memeriksa koneksi ke MySQL dan gagal dengan pesan konfigurasi yang jelas jika koneksi tidak tersedia. Pool ditutup pada graceful shutdown.
+
+Validasi backend:
+
+```bash
+cd backend
+npm run build
+npm test
+npm run test:e2e
+npm run lint
+```
+
+Unit test tidak memerlukan koneksi database. E2E test yang memuat `AppModule` memerlukan MySQL lokal yang dapat diakses.
+
+## Dokumentasi
+
+- [Struktur project](docs/PROJECT-STRUCTURE.md)
+- [Notulensi](docs/NOTULENSI.md)
