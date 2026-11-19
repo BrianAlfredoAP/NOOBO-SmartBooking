@@ -34,7 +34,7 @@ export class DatabaseConnectionService
         this.logger.error(`Could not close the failed MySQL pool: ${closeDetail}`);
       });
       throw new Error(
-        'MySQL connection failed. Check that MySQL is running and DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME in backend/.env are correct.',
+        'MySQL connection failed. Check that MySQL is running and DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME in .env are correct.',
         { cause: error },
       );
     }

@@ -17,7 +17,7 @@ export function validateEnvironment(
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}. Copy backend/.env.example to backend/.env and set the values.`,
+      `Missing required environment variables: ${missing.join(', ')}. Copy .env.example to .env in the backend project folder and set the values.`,
     );
   }
 
