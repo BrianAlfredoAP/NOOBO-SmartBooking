@@ -6,7 +6,7 @@ import { checkDemoCredentials, demoUser, validateDemoLoginInput } from '../../da
 import { demoLogistikUser } from '../../data/logistik-demo.js'
 import { useAuth } from '../../context/auth-context.js'
 import { Navigate, useNavigate } from 'react-router'
-import nooboLogo from '../../assets/logo.png'
+import primaryLogo from '../../assets/brand/NOOBO-Primary-Dark.svg'
 
 const roles = [
   { id: 'peminjam', label: 'Peminjam', icon: UserRound },
@@ -67,11 +67,10 @@ function LoginPage() {
     <main className="auth-page">
       <header className="auth-header">
         <img
-          src={nooboLogo}
-          alt="NOOBO"
+          src={primaryLogo}
+          alt="NOOBO logo with Easy Book, Easy Use tagline"
           className="auth-logo"
         />
-        <p className="auth-tagline">Easy Book, Easy Use</p>
       </header>
 
       <section aria-label="Form login NOOBO" className="auth-panel">
