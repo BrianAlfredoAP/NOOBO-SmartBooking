@@ -50,25 +50,21 @@ export class User {
     return this._created_at;
   }
 
-  // Sensitive field password_hash (-) is kept private / protected.
-  // Internal method to retrieve or compare password hash for auth layer
-  public verifyPasswordHash(hash: string): boolean {
-    return this._password_hash === hash;
-  }
-
+  // Sensitive field password_hash (-) is exposed only to the auth layer.
   public getPasswordHash(): string {
     return this._password_hash;
   }
 
-  public login(email: string, pass: string): boolean {
-    if (this._email === email && this._status_aktif && pass && pass.length > 0) {
-      return true;
-    }
-    return false;
-  }
-
-  public logout(sessionId: number): boolean {
-    return sessionId > 0;
+  static fromRow(row: Record<string, unknown>): User {
+    return new User(
+      Number(row.id_user),
+      Number(row.role_id),
+      String(row.nama),
+      String(row.email),
+      String(row.password_hash),
+      Boolean(row.status_aktif),
+      row.created_at instanceof Date ? row.created_at : new Date(String(row.created_at)),
+    );
   }
 
   public updateProfil(newData: Partial<User>): boolean {

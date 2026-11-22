@@ -10,24 +10,30 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
         this.authService = authService;
     }
     async login(loginDto) {
-        const user = await this.authService.validateUser(loginDto.email, loginDto.password);
-        return {
-            message: 'Login berhasil',
-            user: {
-                id: user.id_user,
-                email: user.email,
-                role: user.role,
-            },
-        };
+        return this.authService.login(loginDto.email, loginDto.password);
+    }
+    async refresh(dto) {
+        return this.authService.refresh(dto.refresh_token);
+    }
+    async me(user) {
+        return this.authService.getProfile(user.id);
+    }
+    async logout(dto) {
+        await this.authService.logout(dto.refresh_token);
+        return { message: 'Logout berhasil' };
     }
 };
 __decorate([
@@ -38,7 +44,35 @@ __decorate([
     __metadata("design:paramtypes", [LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    Post('refresh'),
+    HttpCode(HttpStatus.OK),
+    __param(0, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [RefreshTokenDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "refresh", null);
+__decorate([
+    ApiBearerAuth(),
+    UseGuards(JwtAuthGuard),
+    Get('me'),
+    __param(0, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "me", null);
+__decorate([
+    ApiBearerAuth(),
+    UseGuards(JwtAuthGuard),
+    Post('logout'),
+    HttpCode(HttpStatus.OK),
+    __param(0, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [RefreshTokenDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
 AuthController = __decorate([
+    ApiTags('Auth'),
     Controller('auth'),
     __metadata("design:paramtypes", [AuthService])
 ], AuthController);

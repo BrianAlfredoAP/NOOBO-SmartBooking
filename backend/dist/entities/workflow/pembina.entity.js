@@ -21,6 +21,9 @@ export class Pembina {
     get status_aktif() {
         return this._status_aktif;
     }
+    static fromRow(row) {
+        return new Pembina(Number(row.id_pembina), String(row.nama_pembina), String(row.email_pembina), Boolean(row.status_aktif));
+    }
     approve(idPengajuan) {
         return this._status_aktif && idPengajuan > 0;
     }

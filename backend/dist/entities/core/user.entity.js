@@ -33,20 +33,11 @@ export class User {
     get created_at() {
         return this._created_at;
     }
-    verifyPasswordHash(hash) {
-        return this._password_hash === hash;
-    }
     getPasswordHash() {
         return this._password_hash;
     }
-    login(email, pass) {
-        if (this._email === email && this._status_aktif && pass && pass.length > 0) {
-            return true;
-        }
-        return false;
-    }
-    logout(sessionId) {
-        return sessionId > 0;
+    static fromRow(row) {
+        return new User(Number(row.id_user), Number(row.role_id), String(row.nama), String(row.email), String(row.password_hash), Boolean(row.status_aktif), row.created_at instanceof Date ? row.created_at : new Date(String(row.created_at)));
     }
     updateProfil(newData) {
         if (newData.nama !== undefined) {

@@ -37,8 +37,15 @@ export class Ruangan {
         return this._status_aktif;
     }
     updateStatus(status) {
+        if (status === this._status_aktif)
+            return false;
+        if (status && this._kondisi_fasilitas === 'Rusak')
+            return false;
         this._status_aktif = status;
         return true;
+    }
+    static fromRow(row) {
+        return new Ruangan(Number(row.id_ruangan), String(row.nama_ruangan), String(row.jenis), String(row.lokasi), Number(row.kapasitas), String(row.kondisi_fasilitas), Boolean(row.status_aktif));
     }
     viewDetail() {
         return {

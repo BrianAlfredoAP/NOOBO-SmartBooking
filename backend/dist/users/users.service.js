@@ -8,67 +8,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { UsersRepository } from './users.repository.js';
 let UsersService = class UsersService {
-    users = [];
-    constructor() {
-        this.seedDefaultUsers();
-    }
-    seedDefaultUsers() {
-        const saltRounds = 10;
-        const defaultPasswordHash = bcrypt.hashSync('password123', saltRounds);
-        this.users = [
-            {
-                id_user: 1,
-                role_id: 1,
-                role: 'Peminjam',
-                nama: 'Mahasiswa Pengaju',
-                email: 'mahasiswa@campus.ac.id',
-                password_hash: defaultPasswordHash,
-                status_aktif: true,
-                created_at: new Date(),
-            },
-            {
-                id_user: 2,
-                role_id: 2,
-                role: 'Pembina',
-                nama: 'Pembina Organisasi',
-                email: 'pembina@campus.ac.id',
-                password_hash: defaultPasswordHash,
-                status_aktif: true,
-                created_at: new Date(),
-            },
-            {
-                id_user: 3,
-                role_id: 1,
-                role: 'Peminjam',
-                nama: 'User Dinonaktifkan',
-                email: 'inactive@campus.ac.id',
-                password_hash: defaultPasswordHash,
-                status_aktif: false,
-                created_at: new Date(),
-            },
-        ];
+    usersRepository;
+    constructor(usersRepository) {
+        this.usersRepository = usersRepository;
     }
     async findByEmail(email) {
-        return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+        return this.usersRepository.findByEmail(email);
     }
     async findById(id) {
-        return this.users.find((u) => u.id_user === id);
-    }
-    async createUser(data) {
-        const newUser = {
-            ...data,
-            id_user: this.users.length + 1,
-            created_at: new Date(),
-        };
-        this.users.push(newUser);
-        return newUser;
+        return this.usersRepository.findById(id);
     }
 };
 UsersService = __decorate([
     Injectable(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [UsersRepository])
 ], UsersService);
 export { UsersService };
 //# sourceMappingURL=users.service.js.map

@@ -44,8 +44,18 @@ describe('Domain Entities Initialization & Behavior', () => {
       // password_hash is private and not exposed via public getter
       expect((user as any).password_hash).toBeUndefined();
       expect(user.getPasswordHash()).toBe('$2b$10$hashedpassword');
-      expect(user.login('john@campus.ac.id', 'secret')).toBe(true);
-      expect(user.logout(101)).toBe(true);
+      const hydrated = User.fromRow({
+        id_user: 2,
+        role_id: 1,
+        nama: 'Jane Doe',
+        email: 'jane@campus.ac.id',
+        password_hash: '$2b$10$anotherhash',
+        status_aktif: 1,
+        created_at: new Date('2026-01-01'),
+      });
+      expect(hydrated.id_user).toBe(2);
+      expect(hydrated.status_aktif).toBe(true);
+      expect(hydrated.getPasswordHash()).toBe('$2b$10$anotherhash');
       expect(user.updateProfil({ nama: 'John Updated' })).toBe(true);
       expect(user.nama).toBe('John Updated');
       const dashboard = user.viewDashboard();
