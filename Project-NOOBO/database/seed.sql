@@ -1,18 +1,19 @@
 USE smartbooking_db;
 
 INSERT INTO roles (id, name) VALUES
-(1, 'Peminjam'),
-(2, 'Pembina'),
-(3, 'Petugas Logistik'),
-(4, 'Admin Kampus')
+(1, 'PEMINJAM'),
+(2, 'LOGISTIK'),
+(3, 'PEMBINA'),
+(4, 'ADMIN')
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 
+-- Akun login hanya PEMINJAM & LOGISTIK (Pembina = token-only, tanpa akun).
+-- Password untuk semua akun: password123
 INSERT INTO users (id_user, role_id, nama, email, password_hash, status_aktif) VALUES
-(1, 1, 'Mahasiswa Demo (Peminjam)', 'mahasiswa@campus.ac.id', '$2b$10$wK1F5Nf/sX9g9kQ28O76E.4p7wUfU32B5Bw5z.O4PcvnQzZ0y522u', 1),
-(2, 2, 'Dr. Ir. Budi Santoso (Pembina)', 'pembina@campus.ac.id', '$2b$10$wK1F5Nf/sX9g9kQ28O76E.4p7wUfU32B5Bw5z.O4PcvnQzZ0y522u', 1),
-(3, 3, 'Ahmad Fauzi (Logistik)', 'logistik@campus.ac.id', '$2b$10$wK1F5Nf/sX9g9kQ28O76E.4p7wUfU32B5Bw5z.O4PcvnQzZ0y522u', 1),
-(4, 1, 'User Nonaktif', 'inactive@campus.ac.id', '$2b$10$wK1F5Nf/sX9g9kQ28O76E.4p7wUfU32B5Bw5z.O4PcvnQzZ0y522u', 0)
-ON DUPLICATE KEY UPDATE nama=VALUES(nama), password_hash=VALUES(password_hash), status_aktif=VALUES(status_aktif);
+(1, 1, 'Mahasiswa Demo (Peminjam)', 'mahasiswa@campus.ac.id', '$2b$10$QI/wsr4RY4x3KTUMqllcSeSamCMlakdbkS5YzqjxIZwqwTo0r9OUO', 1),
+(3, 2, 'Ahmad Fauzi (Logistik)', 'logistik@campus.ac.id', '$2b$10$QI/wsr4RY4x3KTUMqllcSeSamCMlakdbkS5YzqjxIZwqwTo0r9OUO', 1),
+(4, 1, 'User Nonaktif', 'inactive@campus.ac.id', '$2b$10$QI/wsr4RY4x3KTUMqllcSeSamCMlakdbkS5YzqjxIZwqwTo0r9OUO', 0)
+ON DUPLICATE KEY UPDATE nama=VALUES(nama), role_id=VALUES(role_id), password_hash=VALUES(password_hash), status_aktif=VALUES(status_aktif);
 
 
 INSERT INTO pembina (id_pembina, nama_pembina, email_pembina, status_aktif) VALUES
