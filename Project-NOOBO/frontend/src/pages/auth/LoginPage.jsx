@@ -2,11 +2,11 @@ import { useId, useState } from 'react'
 import { ArrowRight, Building2, Eye, EyeOff, UserRound } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import Input from '../../components/ui/Input.jsx'
-import { checkDemoCredentials, demoUser, validateDemoLoginInput } from '../../data/demo-user.js'
-import { demoLogistikUser } from '../../data/logistik-demo.js'
+import { validateDemoLoginInput } from '../../data/demo-user.js'
 import { useAuth } from '../../context/auth-context.js'
 import { Navigate, useNavigate } from 'react-router'
 import primaryLogo from '../../assets/brand/NOOBO-Primary-Dark.svg'
+import { apiLogin, apiMe, clearTokens } from '../../api/client.js'
 
 const roles = [
   { id: 'peminjam', label: 'Peminjam', icon: UserRound },
@@ -25,7 +25,7 @@ function LoginPage() {
   const [loginMessage, setLoginMessage] = useState('')
   const [loginMessageError, setLoginMessageError] = useState(false)
   const [helpMessage, setHelpMessage] = useState('')
-  const { user, startDemoSession } = useAuth()
+  const { user, loading: sessionLoading, startDemoSession } = useAuth()
   const navigate = useNavigate()
   const passwordId = useId()
   const passwordErrorId = `${passwordId}-error`
@@ -35,31 +35,37 @@ function LoginPage() {
   const passwordError = validationErrors.password ?? ''
   const formValid = Object.keys(validationErrors).length === 0
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setSubmitted(true)
     setLoginMessage('')
     if (!formValid || loading) return
 
-    const submittedEmail = email
-    const submittedPassword = password
-    const submittedRole = role
     setLoading(true)
-    window.setTimeout(() => {
-      setLoading(false)
-      const result = checkDemoCredentials({ email: submittedEmail, password: submittedPassword, role: submittedRole })
-      if (!result.ok) {
+    try {
+      const apiUser = await apiLogin(email.trim(), password)
+      const actualRole = apiUser.role?.toLowerCase()
+      if (actualRole !== role) {
+        clearTokens()
         setLoginMessageError(true)
-        setLoginMessage('Email atau kata sandi tidak sesuai dengan akun demonstrasi.')
-      } else {
-        startDemoSession(result.user)
-        navigate(result.user.role === 'logistik' ? '/logistik' : '/peminjam', { replace: true })
+        setLoginMessage(`Akun ini terdaftar sebagai ${actualRole === 'logistik' ? 'Logistik Kampus' : actualRole}.`)
+        return
       }
+      const profile = await apiMe()
+      const sessionUser = { name: profile.nama, email: profile.email, role: actualRole }
+      startDemoSession(sessionUser)
+      navigate(actualRole === 'logistik' ? '/logistik' : '/peminjam', { replace: true })
+    } catch (error) {
+      setLoginMessageError(true)
+      setLoginMessage(error.message)
+    } finally {
+      setLoading(false)
       setPassword('')
       setPasswordTouched(false)
-    }, 550)
+    }
   }
 
+  if (sessionLoading) return <main className="auth-page"><p role="status">Memeriksa sesi…</p></main>
   if (user?.role === 'peminjam') return <Navigate to="/peminjam" replace />
   if (user?.role === 'logistik') return <Navigate to="/logistik" replace />
 
@@ -108,7 +114,7 @@ function LoginPage() {
               setLoginMessage('')
               setLoginMessageError(false)
             }}
-            placeholder={role === 'logistik' ? demoLogistikUser.email : demoUser.email}
+            placeholder="nama@kampus.ac.id"
             required
             type="email"
             value={email}
