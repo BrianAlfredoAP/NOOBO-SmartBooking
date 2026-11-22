@@ -49,6 +49,13 @@ Semua error dikembalikan dengan format global:
 | `FSK_INVALID_SCHEDULE` | 400 | Sprint 2 — tanggal mulai setelah selesai atau di masa lalu; detail di `errors[]` |
 | `FSK_INVALID_DETAIL` | 400 | Sprint 2 — `jumlah` detail kebutuhan ≤ 0 |
 
-## Direncanakan (Sprint 3+)
+## Rekomendasi
 
-`NO_PACKAGE_AVAILABLE`, `PACKAGE_UNAVAILABLE`, `APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `NO_PACKAGE_AVAILABLE` | 404 | Sprint 3 — tidak ada ruangan/barang yang lolos filter ketersediaan |
+| `PACKAGE_UNAVAILABLE` | 409 | Sprint 3 — ketersediaan berubah saat paket dipilih; detail di `errors[]` |
+
+## Direncanakan (Sprint 4+)
+
+`APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
