@@ -6,11 +6,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service.js';
+import { UsersRepository } from './users.repository.js';
 let UsersModule = class UsersModule {
 };
 UsersModule = __decorate([
     Module({
-        providers: [UsersService],
+        providers: [UsersRepository, UsersService],
         exports: [UsersService],
     })
 ], UsersModule);

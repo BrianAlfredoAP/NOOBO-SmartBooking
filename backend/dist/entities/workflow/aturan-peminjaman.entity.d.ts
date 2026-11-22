@@ -10,6 +10,7 @@ export declare class AturanPeminjaman {
     get deskripsi(): string;
     get ketentuan(): string;
     get aktif(): boolean;
+    static fromRow(row: Record<string, unknown>): AturanPeminjaman;
     create(): boolean;
     update(data?: Partial<{
         nama_aturan: string;

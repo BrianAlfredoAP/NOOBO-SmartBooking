@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS paket_rekomendasi (
   nama_paket VARCHAR(100) NOT NULL,
   skor DECIMAL(5,2) NOT NULL DEFAULT 0.00,
   alasan TEXT NOT NULL,
+  snapshot JSON NULL,
   dipilih BOOLEAN NOT NULL DEFAULT FALSE,
   dibuat_pada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_paket_fsk FOREIGN KEY (id_fsk) REFERENCES spesifikasi_kebutuhan(id_fsk) ON DELETE CASCADE
@@ -133,8 +134,9 @@ CREATE TABLE IF NOT EXISTS pengajuan_peminjaman (
   waktu_setuju DATETIME NULL,
   nomor_pengajuan VARCHAR(50) NOT NULL UNIQUE,
   tanggal_pengajuan DATETIME DEFAULT CURRENT_TIMESTAMP,
-  status VARCHAR(50) NOT NULL DEFAULT 'MENUNGGU_PERSETUJUAN_PEMBINA',
+  status VARCHAR(50) NOT NULL DEFAULT 'SUBMITTED',
   catatan TEXT,
+  INDEX idx_pengajuan_status (status),
   CONSTRAINT fk_pengajuan_fsk FOREIGN KEY (id_fsk) REFERENCES spesifikasi_kebutuhan(id_fsk),
   CONSTRAINT fk_pengajuan_paket FOREIGN KEY (id_paket) REFERENCES paket_rekomendasi(id_paket),
   CONSTRAINT fk_pengajuan_pembina FOREIGN KEY (id_pembina) REFERENCES pembina(id_pembina),
@@ -148,6 +150,7 @@ CREATE TABLE IF NOT EXISTS alokasi_ruangan (
   tanggal_mulai DATETIME NOT NULL,
   tanggal_selesai DATETIME NOT NULL,
   status_alokasi VARCHAR(50) NOT NULL DEFAULT 'ALLOCATED',
+  INDEX idx_alokasi_ruangan_room_time (id_ruangan, tanggal_mulai, tanggal_selesai),
   CONSTRAINT fk_alokasi_ruangan_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE,
   CONSTRAINT fk_alokasi_ruangan_ruangan FOREIGN KEY (id_ruangan) REFERENCES ruangan(id_ruangan) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -160,6 +163,7 @@ CREATE TABLE IF NOT EXISTS alokasi_logistik (
   tanggal_mulai DATETIME NOT NULL,
   tanggal_selesai DATETIME NOT NULL,
   status_alokasi VARCHAR(50) NOT NULL DEFAULT 'ALLOCATED',
+  INDEX idx_alokasi_logistik_item_time (id_logistik, tanggal_mulai, tanggal_selesai),
   CONSTRAINT fk_alokasi_logistik_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE,
   CONSTRAINT fk_alokasi_logistik_logistik FOREIGN KEY (id_logistik) REFERENCES logistik(id_logistik) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -167,12 +171,15 @@ CREATE TABLE IF NOT EXISTS alokasi_logistik (
 CREATE TABLE IF NOT EXISTS token_keputusan (
   id_notifikasi INT AUTO_INCREMENT PRIMARY KEY,
   id_pengajuan INT NOT NULL,
-  id_token INT NOT NULL,
+  token_hash VARCHAR(255) NOT NULL,
   dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
   kedaluwarsa_pada DATETIME NOT NULL,
   waktu_digunakan DATETIME NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'UNUSED',
-  CONSTRAINT fk_token_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE
+  keputusan VARCHAR(20) NULL,
+  alasan TEXT NULL,
+  CONSTRAINT fk_token_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE,
+  CONSTRAINT uq_token_hash UNIQUE (token_hash)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS keputusan_logistik (
@@ -201,7 +208,7 @@ CREATE TABLE IF NOT EXISTS sbpg (
   id_sbpg INT AUTO_INCREMENT PRIMARY KEY,
   id_pengajuan INT NOT NULL UNIQUE,
   batas_waktu_kirim DATETIME NOT NULL,
-  waktu_kirim DATETIME NOT NULL,
+  waktu_kirim DATETIME NULL,
   status_ketepatan_waktu VARCHAR(50) NOT NULL DEFAULT 'TEPAT_WAKTU',
   catatan_peminjam TEXT,
   foto_kerusakan VARCHAR(255),
@@ -246,4 +253,27 @@ CREATE TABLE IF NOT EXISTS temuan_pemeriksaan (
   CONSTRAINT fk_temuan_hasil FOREIGN KEY (id_hasil_pemeriksaan) REFERENCES hasil_pemeriksaan(id_hasil_pemeriksaan) ON DELETE CASCADE,
   CONSTRAINT fk_temuan_logistik FOREIGN KEY (id_logistik) REFERENCES logistik(id_logistik) ON DELETE SET NULL,
   CONSTRAINT fk_temuan_ruangan FOREIGN KEY (id_ruangan) REFERENCES ruangan(id_ruangan) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS request_status_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_pengajuan INT NOT NULL,
+  from_status VARCHAR(50) NULL,
+  to_status VARCHAR(50) NOT NULL,
+  actor_type VARCHAR(20) NOT NULL,
+  actor_id INT NULL,
+  note TEXT NULL,
+  at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_history_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS email_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_pengajuan INT NULL,
+  to_email VARCHAR(100) NOT NULL,
+  template VARCHAR(50) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  error TEXT NULL,
+  sent_at DATETIME NULL,
+  CONSTRAINT fk_email_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE
 ) ENGINE=InnoDB;

@@ -7,17 +7,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 export class LoginDto {
     email;
     password;
 }
 __decorate([
+    ApiProperty({ example: 'mahasiswa@campus.ac.id' }),
     IsEmail({}, { message: 'Format email tidak valid' }),
     IsNotEmpty({ message: 'Email tidak boleh kosong' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "email", void 0);
 __decorate([
+    ApiProperty({ example: 'password123', minLength: 6 }),
     IsNotEmpty({ message: 'Password tidak boleh kosong' }),
     MinLength(6, { message: 'Password minimal 6 karakter' }),
     __metadata("design:type", String)

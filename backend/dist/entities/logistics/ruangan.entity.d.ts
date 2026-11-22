@@ -15,5 +15,6 @@ export declare class Ruangan {
     get kondisi_fasilitas(): string;
     get status_aktif(): boolean;
     updateStatus(status: boolean): boolean;
+    static fromRow(row: Record<string, unknown>): Ruangan;
     viewDetail(): object;
 }

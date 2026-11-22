@@ -13,5 +13,6 @@ export declare class Logistik {
     get kondisi_fasilitas(): string;
     get status_aktif(): boolean;
     updateStok(qty: number): boolean;
+    static fromRow(row: Record<string, unknown>): Logistik;
     viewDetail(): object;
 }

@@ -13,10 +13,8 @@ export declare class User {
     get email(): string;
     get status_aktif(): boolean;
     get created_at(): Date;
-    verifyPasswordHash(hash: string): boolean;
     getPasswordHash(): string;
-    login(email: string, pass: string): boolean;
-    logout(sessionId: number): boolean;
+    static fromRow(row: Record<string, unknown>): User;
     updateProfil(newData: Partial<User>): boolean;
     viewDashboard(): object;
 }

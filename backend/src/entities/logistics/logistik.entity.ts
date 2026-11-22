@@ -47,11 +47,20 @@ export class Logistik {
   }
 
   public updateStok(qty: number): boolean {
-    if (this._stok_total + qty >= 0) {
-      this._stok_total += qty;
-      return true;
-    }
-    return false;
+    if (!Number.isInteger(qty) || qty === 0 || this._stok_total + qty < 0) return false;
+    this._stok_total += qty;
+    return true;
+  }
+
+  static fromRow(row: Record<string, unknown>): Logistik {
+    return new Logistik(
+      Number(row.id_logistik),
+      String(row.nama_logistik),
+      String(row.jenis),
+      Number(row.stok_total),
+      String(row.kondisi_fasilitas),
+      Boolean(row.status_aktif),
+    );
   }
 
   public viewDetail(): object {

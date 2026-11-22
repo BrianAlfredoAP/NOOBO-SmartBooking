@@ -8,6 +8,7 @@ export declare class Pembina {
     get nama_pembina(): string;
     get email_pembina(): string;
     get status_aktif(): boolean;
+    static fromRow(row: Record<string, unknown>): Pembina;
     approve(idPengajuan: number): boolean;
     reject(idPengajuan: number): boolean;
     viewPengajuan(): Array<object>;

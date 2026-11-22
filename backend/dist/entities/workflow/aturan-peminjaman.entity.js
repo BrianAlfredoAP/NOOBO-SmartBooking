@@ -26,6 +26,9 @@ export class AturanPeminjaman {
     get aktif() {
         return this._aktif;
     }
+    static fromRow(row) {
+        return new AturanPeminjaman(Number(row.id_aturan), String(row.nama_aturan), typeof row.deskripsi === 'string' ? row.deskripsi : '', String(row.ketentuan), Boolean(row.aktif));
+    }
     create() {
         return Boolean(this._nama_aturan && this._ketentuan);
     }
