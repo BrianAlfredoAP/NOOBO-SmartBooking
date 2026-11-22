@@ -1,32 +1,39 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthController } from './auth.controller.js';
-import { AuthService } from './auth.service.js';
-import { UsersService } from '../users/users.service.js';
 
 describe('AuthController', () => {
-  let authController: AuthController;
-  let authService: AuthService;
-  let usersService: UsersService;
+  let controller: AuthController;
+  const authService = {
+    login: vi.fn(),
+    refresh: vi.fn(),
+    logout: vi.fn(),
+    getProfile: vi.fn(),
+  };
 
   beforeEach(() => {
-    usersService = new UsersService();
-    authService = new AuthService(usersService);
-    authController = new AuthController(authService);
+    vi.clearAllMocks();
+    controller = new AuthController(authService as never);
   });
 
-  it('should successfully login with valid credentials', async () => {
-    const response = await authController.login({
-      email: 'mahasiswa@campus.ac.id',
-      password: 'password123',
-    });
-
-    expect(response).toEqual({
+  it('should delegate login to AuthService and return its result', async () => {
+    authService.login.mockResolvedValue({
       message: 'Login berhasil',
-      user: {
-        id: 1,
-        email: 'mahasiswa@campus.ac.id',
-        role: 'Peminjam',
-      },
+      access_token: 'a',
+      refresh_token: 'r',
+      user: { id: 1, email: 'm@x', role: 'PEMINJAM' },
     });
+    const result = await controller.login({ email: 'm@x', password: 'password123' });
+
+    expect(authService.login).toHaveBeenCalledWith('m@x', 'password123');
+    expect(result.access_token).toBe('a');
+    expect(result.user.role).toBe('PEMINJAM');
+  });
+
+  it('should delegate refresh to AuthService', async () => {
+    authService.refresh.mockResolvedValue({ access_token: 'new-token' });
+    const result = await controller.refresh({ refresh_token: 'r' });
+
+    expect(authService.refresh).toHaveBeenCalledWith('r');
+    expect(result.access_token).toBe('new-token');
   });
 });

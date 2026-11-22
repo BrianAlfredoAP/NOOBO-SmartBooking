@@ -6,6 +6,11 @@ export interface AppEnvironment {
   DB_USER: string;
   DB_PASSWORD: string;
   DB_NAME: string;
+  JWT_SECRET: string;
+  JWT_EXPIRES_IN: string;
+  JWT_REFRESH_SECRET: string;
+  JWT_REFRESH_EXPIRES_IN: string;
+  APP_URL: string;
   SESSION_SECRET?: string;
 }
 
@@ -47,6 +52,11 @@ export function validateEnvironment(
     DB_USER: readString('DB_USER'),
     DB_PASSWORD: readString('DB_PASSWORD'),
     DB_NAME: readString('DB_NAME'),
+    JWT_SECRET: readString('JWT_SECRET', 'dev-secret'),
+    JWT_EXPIRES_IN: readString('JWT_EXPIRES_IN', '15m'),
+    JWT_REFRESH_SECRET: readString('JWT_REFRESH_SECRET', 'dev-refresh-secret'),
+    JWT_REFRESH_EXPIRES_IN: readString('JWT_REFRESH_EXPIRES_IN', '7d'),
+    APP_URL: readString('APP_URL', 'http://localhost:3000'),
     SESSION_SECRET: environment.SESSION_SECRET === undefined
       ? undefined
       : readString('SESSION_SECRET'),

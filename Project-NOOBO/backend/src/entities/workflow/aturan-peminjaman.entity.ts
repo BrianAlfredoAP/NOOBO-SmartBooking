@@ -39,6 +39,16 @@ export class AturanPeminjaman {
     return this._aktif;
   }
 
+  static fromRow(row: Record<string, unknown>): AturanPeminjaman {
+    return new AturanPeminjaman(
+      Number(row.id_aturan),
+      String(row.nama_aturan),
+      typeof row.deskripsi === 'string' ? row.deskripsi : '',
+      String(row.ketentuan),
+      Boolean(row.aktif),
+    );
+  }
+
   public create(): boolean {
     return Boolean(this._nama_aturan && this._ketentuan);
   }

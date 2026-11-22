@@ -1,10 +1,10 @@
-﻿import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: { tsconfigPaths: true },
   test: {
-    include: ['test/**/*.e2e-spec.ts'],
-    environment: 'node',
     globals: true,
-    testTimeout: 10000,
+    root: './',
+    include: ['**/*.e2e-spec.ts'],
   },
 });

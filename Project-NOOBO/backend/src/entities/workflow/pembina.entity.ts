@@ -27,6 +27,15 @@ export class Pembina {
     return this._status_aktif;
   }
 
+  static fromRow(row: Record<string, unknown>): Pembina {
+    return new Pembina(
+      Number(row.id_pembina),
+      String(row.nama_pembina),
+      String(row.email_pembina),
+      Boolean(row.status_aktif),
+    );
+  }
+
   public approve(idPengajuan: number): boolean {
     return this._status_aktif && idPengajuan > 0;
   }

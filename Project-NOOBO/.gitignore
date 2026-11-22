@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# build
+dist/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.local
+
+# coverage
+coverage/
+
+# misc
+.DS_Store
+*.log
