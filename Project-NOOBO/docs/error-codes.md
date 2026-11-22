@@ -41,6 +41,14 @@ Semua error dikembalikan dengan format global:
 | `LOAN_RULE_NAME_TAKEN` | 409 | Sprint 1 — nama aturan duplikat |
 | `LOAN_RULE_IN_USE` | 409 | Sprint 1 — aturan dipakai pengajuan aktif |
 
-## Direncanakan (Sprint 2+)
+## FSK
 
-`FSK_INVALID_*`, `NO_PACKAGE_AVAILABLE`, `PACKAGE_UNAVAILABLE`, `APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `FSK_INVALID_CAPACITY` | 400 | Sprint 2 — `jumlah_peserta` ≤ 0 |
+| `FSK_INVALID_SCHEDULE` | 400 | Sprint 2 — tanggal mulai setelah selesai atau di masa lalu; detail di `errors[]` |
+| `FSK_INVALID_DETAIL` | 400 | Sprint 2 — `jumlah` detail kebutuhan ≤ 0 |
+
+## Direncanakan (Sprint 3+)
+
+`NO_PACKAGE_AVAILABLE`, `PACKAGE_UNAVAILABLE`, `APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
