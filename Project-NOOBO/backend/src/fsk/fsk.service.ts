@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator.js';
 import { BusinessException } from '../common/exceptions/business.exception.js';
 import type { CreateFskDto, FskDetailDto, UpdateFskDto } from './dto/fsk.dto.js';
+import type { FskRecord } from './fsk.repository.js';
 import { FskRepository } from './fsk.repository.js';
 
 interface ScheduleInput {
@@ -44,6 +45,10 @@ export class FskService {
 
     await this.repository.update(id, dto);
     return this.detail(id, user);
+  }
+
+  async findOwned(id: number, user: AuthenticatedUser): Promise<FskRecord> {
+    return this.requireOwned(id, user);
   }
 
   private async detail(id: number, user: AuthenticatedUser) {

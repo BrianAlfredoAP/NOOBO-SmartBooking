@@ -84,6 +84,11 @@ export class FskRepository {
         );
         await this.insertDetails(connection, id, dto.detail_kebutuhan);
       }
+      // Perubahan FSK membatalkan rekomendasi paket sebelumnya.
+      await connection.execute(
+        'DELETE FROM paket_rekomendasi WHERE id_fsk = ?',
+        [id],
+      );
       await connection.commit();
     } catch (error) {
       await connection.rollback();
