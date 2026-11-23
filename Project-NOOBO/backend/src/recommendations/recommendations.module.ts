@@ -9,6 +9,6 @@ import { RecommendationsService } from './recommendations.service.js';
   imports: [FskModule, AllocationsModule],
   controllers: [RecommendationsController],
   providers: [RecommendationsRepository, RecommendationsService],
-  exports: [RecommendationsService],
+  exports: [RecommendationsRepository, RecommendationsService],
 })
 export class RecommendationsModule {}
