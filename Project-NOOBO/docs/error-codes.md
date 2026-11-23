@@ -56,6 +56,21 @@ Semua error dikembalikan dengan format global:
 | `NO_PACKAGE_AVAILABLE` | 404 | Sprint 3 — tidak ada ruangan/barang yang lolos filter ketersediaan |
 | `PACKAGE_UNAVAILABLE` | 409 | Sprint 3 — ketersediaan berubah saat paket dipilih; detail di `errors[]` |
 
-## Direncanakan (Sprint 4+)
+## FPP & Persetujuan Pembina
 
-`APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `PACKAGE_NOT_SELECTED` | 409 | Sprint 4 — FPP dikirim sebelum paket rekomendasi dipilih |
+| `LOAN_REQUEST_EXISTS` | 409 | Sprint 4 — FSK sudah punya pengajuan aktif |
+| `LOAN_RULE_UNAVAILABLE` | 409 | Sprint 4 — belum ada aturan peminjaman aktif |
+| `PEMBINA_INACTIVE` | 400 | Sprint 4 — Pembina yang dipilih tidak aktif |
+| `TERMS_NOT_ACCEPTED` | 400 | Sprint 4 — syarat dan ketentuan belum disetujui |
+| `LOAN_REQUEST_NOT_CANCELLABLE` | 409 | Sprint 4 — pembatalan setelah keputusan Logistik |
+| `APPROVAL_TOKEN_USED` | 409 | Sprint 4 — tautan Pembina dipakai dua kali |
+| `APPROVAL_TOKEN_EXPIRED` | 410 | Sprint 4 — tautan Pembina kedaluwarsa |
+| `APPROVAL_NOT_PENDING` | 409 | Sprint 4 — pengajuan tidak lagi menunggu Pembina |
+| `APPROVAL_REASON_REQUIRED` | 400 | Sprint 4 — alasan wajib saat menolak |
+
+## Direncanakan (Sprint 5+)
+
+`ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
