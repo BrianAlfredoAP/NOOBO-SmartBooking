@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router'
 import { Bell, FileText, FolderOpen, History, Home, LogOut, UserRound } from 'lucide-react'
 import Brand from './Brand.jsx'
@@ -11,7 +11,7 @@ import { createDemoApplication } from '../../data/application-demo.js'
 import Modal from '../ui/Modal.jsx'
 import Button from '../ui/Button.jsx'
 import { demoUser } from '../../data/demo-user.js'
-import { defaultNotificationPreferences, initialDemoNotifications } from '../../data/peminjam-workspace-demo.js'
+import { defaultNotificationPreferences } from '../../data/peminjam-workspace-demo.js'
 import useLocalStorageState from '../../hooks/useLocalStorageState.js'
 
 const navigationItems = [
@@ -33,11 +33,16 @@ function PeminjamLayout() {
   const [selectedLogistics, setSelectedLogistics] = useState([])
   const [supervisorEmail, setSupervisorEmail] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
-  const [submittedApplications, setSubmittedApplications] = useLocalStorageState('noobo-demo-applications', [])
+  const [submittedApplications, setSubmittedApplications] = useState([])
   const [lastSubmittedRequestId, setLastSubmittedRequestId] = useState('')
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const [profile, setProfile] = useState({ ...demoUser, nim:'', programStudi:'', fakultas:'', whatsapp:'', photo:'' })
-  const [notifications, setNotifications] = useLocalStorageState('noobo-demo-notifications', initialDemoNotifications)
+  const [profile, setProfile] = useState(() => ({ ...demoUser, name: user?.name || demoUser.name, email: user?.email || demoUser.email, nim:'', programStudi:'', fakultas:'', whatsapp:'', photo:'' }))
+  useEffect(() => {
+    if (user?.name && user?.email) {
+      setProfile((current) => ({ ...current, name: user.name, email: user.email }))
+    }
+  }, [user?.name, user?.email])
+  const [notifications, setNotifications] = useState([])
   const [notificationPreferences, setNotificationPreferences] = useLocalStorageState('noobo-notification-preferences', defaultNotificationPreferences)
   const [returnReports, setReturnReports] = useLocalStorageState('noobo-demo-return-reports', {})
   const [logisticsDecisions] = useLocalStorageState('noobo-logistik-decisions', {})
