@@ -64,4 +64,27 @@ export class DetailKebutuhanFsk {
     this._jumlah = 0;
     return true;
   }
+
+  static fromRow(row: Record<string, unknown>): DetailKebutuhanFsk {
+    return new DetailKebutuhanFsk(
+      Number(row.id_detail_kebutuhan),
+      Number(row.id_fsk),
+      String(row.kategori),
+      String(row.jenis_kebutuhan),
+      Number(row.jumlah),
+      row.keterangan === null || row.keterangan === undefined
+        ? ''
+        : String(row.keterangan as string | number),
+    );
+  }
+
+  public viewDetail(): object {
+    return {
+      id_detail_kebutuhan: this._id_detail_kebutuhan,
+      kategori: this._kategori,
+      jenis_kebutuhan: this._jenis_kebutuhan,
+      jumlah: this._jumlah,
+      keterangan: this._keterangan,
+    };
+  }
 }

@@ -41,6 +41,36 @@ Semua error dikembalikan dengan format global:
 | `LOAN_RULE_NAME_TAKEN` | 409 | Sprint 1 — nama aturan duplikat |
 | `LOAN_RULE_IN_USE` | 409 | Sprint 1 — aturan dipakai pengajuan aktif |
 
-## Direncanakan (Sprint 2+)
+## FSK
 
-`FSK_INVALID_*`, `NO_PACKAGE_AVAILABLE`, `PACKAGE_UNAVAILABLE`, `APPROVAL_TOKEN_USED`, `APPROVAL_TOKEN_EXPIRED`, `ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `FSK_INVALID_CAPACITY` | 400 | Sprint 2 — `jumlah_peserta` ≤ 0 |
+| `FSK_INVALID_SCHEDULE` | 400 | Sprint 2 — tanggal mulai setelah selesai atau di masa lalu; detail di `errors[]` |
+| `FSK_INVALID_DETAIL` | 400 | Sprint 2 — `jumlah` detail kebutuhan ≤ 0 |
+
+## Rekomendasi
+
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `NO_PACKAGE_AVAILABLE` | 404 | Sprint 3 — tidak ada ruangan/barang yang lolos filter ketersediaan |
+| `PACKAGE_UNAVAILABLE` | 409 | Sprint 3 — ketersediaan berubah saat paket dipilih; detail di `errors[]` |
+
+## FPP & Persetujuan Pembina
+
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `PACKAGE_NOT_SELECTED` | 409 | Sprint 4 — FPP dikirim sebelum paket rekomendasi dipilih |
+| `LOAN_REQUEST_EXISTS` | 409 | Sprint 4 — FSK sudah punya pengajuan aktif |
+| `LOAN_RULE_UNAVAILABLE` | 409 | Sprint 4 — belum ada aturan peminjaman aktif |
+| `PEMBINA_INACTIVE` | 400 | Sprint 4 — Pembina yang dipilih tidak aktif |
+| `TERMS_NOT_ACCEPTED` | 400 | Sprint 4 — syarat dan ketentuan belum disetujui |
+| `LOAN_REQUEST_NOT_CANCELLABLE` | 409 | Sprint 4 — pembatalan setelah keputusan Logistik |
+| `APPROVAL_TOKEN_USED` | 409 | Sprint 4 — tautan Pembina dipakai dua kali |
+| `APPROVAL_TOKEN_EXPIRED` | 410 | Sprint 4 — tautan Pembina kedaluwarsa |
+| `APPROVAL_NOT_PENDING` | 409 | Sprint 4 — pengajuan tidak lagi menunggu Pembina |
+| `APPROVAL_REASON_REQUIRED` | 400 | Sprint 4 — alasan wajib saat menolak |
+
+## Direncanakan (Sprint 5+)
+
+`ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.

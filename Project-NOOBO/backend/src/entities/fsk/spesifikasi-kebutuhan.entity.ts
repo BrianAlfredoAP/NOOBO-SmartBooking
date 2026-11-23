@@ -103,31 +103,56 @@ export class SpesifikasiKebutuhan {
 
   public validate(): boolean {
     return Boolean(
-      this._nama_kegiatan &&
+      this._nama_kegiatan?.trim() &&
+      this._tujuan_kegiatan?.trim() &&
+      Number.isInteger(this._jumlah_peserta) &&
       this._jumlah_peserta > 0 &&
-      this._tanggal_mulai &&
-      this._tanggal_selesai &&
-      this._waktu_mulai &&
-      this._waktu_selesai,
+      isValidDate(this._tanggal_mulai) &&
+      isValidDate(this._tanggal_selesai) &&
+      this._tanggal_mulai.getTime() <= this._tanggal_selesai.getTime() &&
+      this._waktu_mulai?.trim() &&
+      this._waktu_selesai?.trim(),
     );
   }
 
-  public viewDetail(id: number): object {
-    if (this._id_fsk === id) {
-      return {
-        id_fsk: this._id_fsk,
-        id_user: this._id_user,
-        nama_kegiatan: this._nama_kegiatan,
-        tanggal_mulai: this._tanggal_mulai,
-        tanggal_selesai: this._tanggal_selesai,
-        waktu_mulai: this._waktu_mulai,
-        waktu_selesai: this._waktu_selesai,
-        jumlah_peserta: this._jumlah_peserta,
-        tujuan_kegiatan: this._tujuan_kegiatan,
-        status: this._status,
-        created_at: this._created_at,
-      };
-    }
-    return {};
+  static fromRow(row: Record<string, unknown>): SpesifikasiKebutuhan {
+    return new SpesifikasiKebutuhan(
+      Number(row.id_fsk),
+      Number(row.id_user),
+      String(row.nama_kegiatan),
+      toDate(row.tanggal_mulai),
+      toDate(row.tanggal_selesai),
+      String(row.waktu_mulai),
+      String(row.waktu_selesai),
+      Number(row.jumlah_peserta),
+      String(row.tujuan_kegiatan),
+      String((row.status ?? 'DRAFT') as string),
+      toDate(row.created_at),
+    );
   }
+
+  public viewDetail(id?: number): object {
+    if (id !== undefined && this._id_fsk !== id) return {};
+    return {
+      id_fsk: this._id_fsk,
+      id_user: this._id_user,
+      nama_kegiatan: this._nama_kegiatan,
+      tanggal_mulai: this._tanggal_mulai,
+      tanggal_selesai: this._tanggal_selesai,
+      waktu_mulai: this._waktu_mulai,
+      waktu_selesai: this._waktu_selesai,
+      jumlah_peserta: this._jumlah_peserta,
+      tujuan_kegiatan: this._tujuan_kegiatan,
+      status: this._status,
+      created_at: this._created_at,
+    };
+  }
+}
+
+function isValidDate(value: Date): boolean {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function toDate(value: unknown): Date {
+  return value instanceof Date ? value : new Date(String(value));
 }

@@ -17,6 +17,7 @@ export * from './logistics/paket-logistik.entity.js';
 export * from './logistics/alokasi-logistik.entity.js';
 
 // Submission, Approval & Inspection Workflow
+export * from './workflow/pengajuan-status.js';
 export * from './workflow/pengajuan-peminjaman.entity.js';
 export * from './workflow/pembina.entity.js';
 export * from './workflow/aturan-peminjaman.entity.js';
