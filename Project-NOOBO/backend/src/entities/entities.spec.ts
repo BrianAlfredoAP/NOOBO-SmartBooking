@@ -166,8 +166,11 @@ describe('Domain Entities Initialization & Behavior', () => {
         'REQ-2026-001',
       );
       expect(pengajuan.submit()).toBe(true);
-      expect(pengajuan.status).toBe('MENUNGGU_PERSETUJUAN_PEMBINA');
-      expect(pengajuan.updateStatus('DISETUJUI')).toBe(true);
+      expect(pengajuan.status).toBe('SUBMITTED');
+      expect(pengajuan.updateStatus('WAITING_PEMBINA')).toBe(true);
+      expect(pengajuan.status).toBe('WAITING_PEMBINA');
+      expect(pengajuan.updateStatus('COMPLETED')).toBe(false);
+      expect(pengajuan.updateStatus('WAITING_LOGISTIK')).toBe(true);
       expect(pengajuan.viewHistory().length).toBeGreaterThan(0);
 
       const pembina = new Pembina(5, 'Dr. Budi', 'pembina@campus.ac.id', true);
@@ -182,12 +185,16 @@ describe('Domain Entities Initialization & Behavior', () => {
     });
 
     it('should initialize TokenKeputusan and KeputusanLogistik', () => {
-      const token = new TokenKeputusan(1, 1, 101);
+      const token = new TokenKeputusan(1, 1);
       const generated = token.generateToken();
-      expect(generated).toBeDefined();
+      expect(generated).toMatch(/^[a-f0-9]{64}$/);
+      expect(token.token_hash).toHaveLength(64);
+      expect(token.token_hash).not.toBe(generated);
       expect(token.validateToken()).toBe(true);
-      expect(token.markAsUsed()).toBe(true);
+      expect(token.markAsUsed('APPROVE', 'Disetujui')).toBe(true);
       expect(token.status).toBe('USED');
+      expect(token.keputusan).toBe('APPROVE');
+      expect(token.markAsUsed('REJECT')).toBe(false);
 
       const keputusan = new KeputusanLogistik(1, 1, 20);
       expect(keputusan.approve()).toBe(true);

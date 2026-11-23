@@ -11,6 +11,12 @@ export interface AppEnvironment {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_EXPIRES_IN: string;
   APP_URL: string;
+  APPROVAL_TOKEN_TTL_HOURS: number;
+  MAIL_HOST?: string;
+  MAIL_PORT: number;
+  MAIL_USER?: string;
+  MAIL_PASSWORD?: string;
+  MAIL_FROM: string;
   SESSION_SECRET?: string;
 }
 
@@ -57,10 +63,45 @@ export function validateEnvironment(
     JWT_REFRESH_SECRET: readString('JWT_REFRESH_SECRET', 'dev-refresh-secret'),
     JWT_REFRESH_EXPIRES_IN: readString('JWT_REFRESH_EXPIRES_IN', '7d'),
     APP_URL: readString('APP_URL', 'http://localhost:3000'),
+    APPROVAL_TOKEN_TTL_HOURS: parsePositiveNumber(
+      environment.APPROVAL_TOKEN_TTL_HOURS,
+      'APPROVAL_TOKEN_TTL_HOURS',
+      48,
+    ),
+    MAIL_HOST: readOptionalString(environment, 'MAIL_HOST'),
+    MAIL_PORT: parsePort(environment.MAIL_PORT, 'MAIL_PORT', 587),
+    MAIL_USER: readOptionalString(environment, 'MAIL_USER'),
+    MAIL_PASSWORD: readOptionalString(environment, 'MAIL_PASSWORD'),
+    MAIL_FROM: readString('MAIL_FROM', 'no-reply@smartbooking.local'),
     SESSION_SECRET: environment.SESSION_SECRET === undefined
       ? undefined
       : readString('SESSION_SECRET'),
   };
+}
+
+function readOptionalString(
+  environment: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = environment[key];
+  if (value === undefined || value === '') return undefined;
+  if (typeof value !== 'string') {
+    throw new Error(`${key} must be a string environment value.`);
+  }
+  return value;
+}
+
+function parsePositiveNumber(
+  value: unknown,
+  name: string,
+  fallback: number,
+): number {
+  if (value === undefined || value === '') return fallback;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive number.`);
+  }
+  return parsed;
 }
 
 function parsePort(value: unknown, name: string, fallback: number): number {

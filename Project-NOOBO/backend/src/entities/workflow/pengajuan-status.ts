@@ -1,0 +1,50 @@
+export const PENGAJUAN_STATUS = {
+  SUBMITTED: 'SUBMITTED',
+  WAITING_PEMBINA: 'WAITING_PEMBINA',
+  REJECTED_PEMBINA: 'REJECTED_PEMBINA',
+  WAITING_LOGISTIK: 'WAITING_LOGISTIK',
+  REJECTED_LOGISTIK: 'REJECTED_LOGISTIK',
+  APPROVED_LOGISTIK: 'APPROVED_LOGISTIK',
+  ONGOING: 'ONGOING',
+  RETURN_REPORTED: 'RETURN_REPORTED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export type PengajuanStatus =
+  (typeof PENGAJUAN_STATUS)[keyof typeof PENGAJUAN_STATUS];
+
+const TRANSITIONS: Record<PengajuanStatus, readonly PengajuanStatus[]> = {
+  SUBMITTED: ['WAITING_PEMBINA', 'CANCELLED'],
+  WAITING_PEMBINA: [
+    'WAITING_LOGISTIK',
+    'REJECTED_PEMBINA',
+    'EXPIRED',
+    'CANCELLED',
+  ],
+  REJECTED_PEMBINA: [],
+  WAITING_LOGISTIK: [
+    'APPROVED_LOGISTIK',
+    'REJECTED_LOGISTIK',
+    'CANCELLED',
+  ],
+  REJECTED_LOGISTIK: [],
+  APPROVED_LOGISTIK: ['ONGOING'],
+  ONGOING: ['RETURN_REPORTED'],
+  RETURN_REPORTED: ['COMPLETED'],
+  COMPLETED: [],
+  CANCELLED: [],
+  EXPIRED: [],
+};
+
+export function canTransition(from: string, to: string): boolean {
+  const allowed = TRANSITIONS[from as PengajuanStatus];
+  return Boolean(allowed?.includes(to as PengajuanStatus));
+}
+
+export const CANCELLABLE_STATUSES: readonly PengajuanStatus[] = [
+  PENGAJUAN_STATUS.SUBMITTED,
+  PENGAJUAN_STATUS.WAITING_PEMBINA,
+  PENGAJUAN_STATUS.WAITING_LOGISTIK,
+];
