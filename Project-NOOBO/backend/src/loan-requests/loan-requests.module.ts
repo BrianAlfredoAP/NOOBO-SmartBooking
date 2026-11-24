@@ -11,6 +11,6 @@ import { LoanRequestsService } from './loan-requests.service.js';
   imports: [FskModule, RecommendationsModule, EmailModule, NotificationsModule],
   controllers: [LoanRequestsController],
   providers: [LoanRequestsRepository, LoanRequestsService],
-  exports: [LoanRequestsService],
+  exports: [LoanRequestsRepository, LoanRequestsService],
 })
 export class LoanRequestsModule {}

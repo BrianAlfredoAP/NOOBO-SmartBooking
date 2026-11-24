@@ -12,6 +12,7 @@ export interface AppEnvironment {
   JWT_REFRESH_EXPIRES_IN: string;
   APP_URL: string;
   APPROVAL_TOKEN_TTL_HOURS: number;
+  DOCUMENT_STORAGE_DIR: string;
   MAIL_HOST?: string;
   MAIL_PORT: number;
   MAIL_USER?: string;
@@ -67,6 +68,10 @@ export function validateEnvironment(
       environment.APPROVAL_TOKEN_TTL_HOURS,
       'APPROVAL_TOKEN_TTL_HOURS',
       48,
+    ),
+    DOCUMENT_STORAGE_DIR: readString(
+      'DOCUMENT_STORAGE_DIR',
+      'storage/documents',
     ),
     MAIL_HOST: readOptionalString(environment, 'MAIL_HOST'),
     MAIL_PORT: parsePort(environment.MAIL_PORT, 'MAIL_PORT', 587),

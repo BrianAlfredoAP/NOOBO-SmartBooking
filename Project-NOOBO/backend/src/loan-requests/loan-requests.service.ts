@@ -23,7 +23,6 @@ import type {
 import type {
   InspectionDto,
   LoanRequestQueryDto,
-  LogisticsDecisionDto,
   SubmitReturnDto,
 } from './dto/loan-lifecycle.dto.js';
 import { LoanRequestsRepository } from './loan-requests.repository.js';
@@ -201,86 +200,6 @@ export class LoanRequestsService {
     await this.requireVisible(id, user);
     const rows = await this.repository.listHistory(id);
     return { message: 'Riwayat status pengajuan', data: rows };
-  }
-
-  async decideLogistics(
-    id: number,
-    dto: LogisticsDecisionDto,
-    user: AuthenticatedUser,
-  ) {
-    if (
-      (dto.keputusan === 'REJECT' || dto.keputusan === 'REVISION') &&
-      !dto.alasan?.trim()
-    ) {
-      throw new BusinessException(
-        'LOGISTICS_REASON_REQUIRED',
-        'Alasan wajib diisi untuk keputusan ini',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const result = await this.repository.decideLogistics(id, user.id, {
-      keputusan: dto.keputusan,
-      alasan: dto.alasan,
-    });
-    if (result.outcome === 'NOT_FOUND') {
-      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
-    }
-    if (result.outcome === 'NOT_PENDING') {
-      throw new BusinessException(
-        'LOGISTICS_NOT_PENDING',
-        'Pengajuan tidak dalam status menunggu Logistik',
-        HttpStatus.CONFLICT,
-        [`Status saat ini: ${statusLabel(result.status)}`],
-      );
-    }
-
-    const label = statusLabel(result.status);
-    await this.notifications?.notify({
-      id_user: result.id_user,
-      id_pengajuan: id,
-      judul: `Pengajuan ${label}`,
-      isi: `${result.nama_kegiatan}: ${label}.${
-        dto.alasan ? ` Catatan Logistik: ${dto.alasan}` : ''
-      }`,
-      kategori: dto.keputusan === 'APPROVE' ? 'Persetujuan' : 'Pengajuan',
-    });
-
-    return {
-      message: 'Keputusan Logistik disimpan',
-      data: { status: result.status, status_label: label },
-    };
-  }
-
-  async issueSbp(id: number, user: AuthenticatedUser) {
-    const result = await this.repository.issueSbp(id, user.id);
-    if (result.outcome === 'NOT_FOUND') {
-      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
-    }
-    if (result.outcome === 'INVALID_STATUS') {
-      throw new BusinessException(
-        'SBP_NOT_ELIGIBLE',
-        'SBP hanya dapat diterbitkan setelah pengajuan disetujui Logistik',
-        HttpStatus.CONFLICT,
-        [`Status saat ini: ${statusLabel(result.status)}`],
-      );
-    }
-
-    const view = await this.repository.findDetail(id);
-    if (view && view.id_user != null) {
-      await this.notifications?.notify({
-        id_user: Number(view.id_user),
-        id_pengajuan: id,
-        judul: 'SBP tersedia',
-        isi: `Surat Bukti Peminjaman untuk ${String(view.nama_kegiatan)} telah diterbitkan.`,
-        kategori: 'Dokumen',
-      });
-    }
-
-    if (result.outcome !== 'OK') {
-      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
-    }
-    return { message: 'SBP diterbitkan', data: result.data };
   }
 
   async submitReturn(

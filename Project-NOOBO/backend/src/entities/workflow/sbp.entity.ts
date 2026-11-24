@@ -51,7 +51,13 @@ export class Sbp {
     return this._lokasi_dokumen;
   }
 
-  public generate(): object {
+  public generate(): {
+    id_sbp: number;
+    id_pengajuan: number;
+    nomor_sbp: string;
+    tanggal_terbit: Date;
+    lokasi_dokumen: string;
+  } {
     this._nomor_sbp = `SBP-${this._id_pengajuan}-${Date.now()}`;
     this._tanggal_terbit = new Date();
     this._lokasi_dokumen = `/documents/sbp/${this._nomor_sbp}.pdf`;

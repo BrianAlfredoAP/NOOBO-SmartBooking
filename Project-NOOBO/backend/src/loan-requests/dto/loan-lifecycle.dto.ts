@@ -20,18 +20,6 @@ export class LoanRequestQueryDto extends PaginationDto {
   status?: string;
 }
 
-export class LogisticsDecisionDto {
-  @ApiProperty({ enum: ['APPROVE', 'REVISION', 'REJECT'] })
-  @IsIn(['APPROVE', 'REVISION', 'REJECT'])
-  keputusan: 'APPROVE' | 'REVISION' | 'REJECT';
-
-  @ApiPropertyOptional({ maxLength: 1000 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  alasan?: string;
-}
-
 export class ReturnItemDto {
   @ApiPropertyOptional()
   @IsOptional()

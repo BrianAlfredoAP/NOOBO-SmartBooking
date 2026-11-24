@@ -6,7 +6,7 @@ import {
 } from './entities/workflow/pengajuan-status.js';
 import { toRequestView } from './loan-requests/loan-requests.mapper.js';
 import { NotificationsRepository } from './notifications/notifications.repository.js';
-import { LoanRequestsService } from './loan-requests/loan-requests.service.js';
+import { LogisticsService } from './logistics/logistics.service.js';
 
 const user = { id: 1, email: 'mahasiswa@campus.ac.id', role: 'PEMINJAM' };
 
@@ -141,20 +141,20 @@ describe('NotificationsRepository (mock pool)', () => {
   });
 });
 
-describe('LoanRequestsService lifecycle validation', () => {
+describe('LogisticsService decision validation', () => {
   it('requires a reason for REJECT/REVISION before touching the database', async () => {
-    const repository = { decideLogistics: vi.fn() };
-    const service = new LoanRequestsService(
-      {} as never,
-      {} as never,
+    const repository = { decide: vi.fn() };
+    const service = new LogisticsService(
       repository as never,
+      {} as never,
+      {} as never,
       {} as never,
       {} as never,
     );
 
     await expect(
-      service.decideLogistics(7, { keputusan: 'REJECT' }, user),
+      service.decide(7, { keputusan: 'REJECT' }, user),
     ).rejects.toMatchObject({ code: 'LOGISTICS_REASON_REQUIRED' });
-    expect(repository.decideLogistics).not.toHaveBeenCalled();
+    expect(repository.decide).not.toHaveBeenCalled();
   });
 });

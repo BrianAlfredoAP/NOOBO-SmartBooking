@@ -21,7 +21,6 @@ import {
 import {
   InspectionDto,
   LoanRequestQueryDto,
-  LogisticsDecisionDto,
   SubmitReturnDto,
 } from './dto/loan-lifecycle.dto.js';
 import { LoanRequestsService } from './loan-requests.service.js';
@@ -83,25 +82,6 @@ export class LoanRequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.cancel(id, dto, user);
-  }
-
-  @Post(':id/logistics-decision')
-  @Roles('LOGISTIK')
-  decideLogistics(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: LogisticsDecisionDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.service.decideLogistics(id, dto, user);
-  }
-
-  @Post(':id/sbp')
-  @Roles('LOGISTIK')
-  issueSbp(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.service.issueSbp(id, user);
   }
 
   @Post(':id/return')

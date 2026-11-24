@@ -69,11 +69,6 @@ export interface LoanRequestFilter {
   limit: number;
 }
 
-export interface LogisticsDecisionInput {
-  keputusan: 'APPROVE' | 'REVISION' | 'REJECT';
-  alasan?: string;
-}
-
 export interface SubmitReturnInput {
   catatan?: string;
   foto_kerusakan?: string;
@@ -97,17 +92,6 @@ export interface InspectionInput {
     foto_bukti?: string;
   }>;
 }
-
-export type LogisticsDecisionOutcome =
-  | {
-      outcome: 'OK';
-      previous_status: string;
-      status: string;
-      id_user: number;
-      nama_kegiatan: string;
-    }
-  | { outcome: 'NOT_FOUND' }
-  | { outcome: 'NOT_PENDING'; status: string };
 
 export type LifecycleOutcome =
   | { outcome: 'OK'; data: Record<string, unknown> }
@@ -361,6 +345,16 @@ export class LoanRequestsRepository {
     return rows[0] ?? null;
   }
 
+  async listOngoing(): Promise<RowDataPacket[]> {
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT ${REQUEST_SELECT} ${REQUEST_FROM}
+       WHERE p.status = ?
+       ORDER BY p.tanggal_pengajuan ASC, p.id_pengajuan ASC`,
+      [PENGAJUAN_STATUS.ONGOING],
+    );
+    return rows;
+  }
+
   async findPackageLines(idPaket: number | null): Promise<{
     room: RowDataPacket | null;
     logistics: RowDataPacket[];
@@ -394,6 +388,30 @@ export class LoanRequestsRepository {
     return rows;
   }
 
+  async listAllocations(idPengajuan: number): Promise<{
+    rooms: RowDataPacket[];
+    items: RowDataPacket[];
+  }> {
+    const [rooms] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT a.id_alokasi_ruangan, r.nama_ruangan, r.kode_ruangan
+       FROM alokasi_ruangan a
+       JOIN ruangan r ON r.id_ruangan = a.id_ruangan
+       WHERE a.id_pengajuan = ?
+       ORDER BY a.id_alokasi_ruangan ASC`,
+      [idPengajuan],
+    );
+    const [items] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT a.id_alokasi_logistik, l.nama_logistik, l.satuan,
+              a.jumlah_dialokasikan
+       FROM alokasi_logistik a
+       JOIN logistik l ON l.id_logistik = a.id_logistik
+       WHERE a.id_pengajuan = ?
+       ORDER BY a.id_alokasi_logistik ASC`,
+      [idPengajuan],
+    );
+    return { rooms, items };
+  }
+
   async listReturnDetails(idPengajuan: number): Promise<RowDataPacket[]> {
     const [rows] = await this.pool.execute<RowDataPacket[]>(
       `SELECT d.* FROM detail_pengembalian d
@@ -403,183 +421,6 @@ export class LoanRequestsRepository {
       [idPengajuan],
     );
     return rows;
-  }
-
-  async decideLogistics(
-    id: number,
-    idUserLogistik: number,
-    input: LogisticsDecisionInput,
-  ): Promise<LogisticsDecisionOutcome> {
-    const connection = await this.pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      const [rows] = await connection.execute<RowDataPacket[]>(
-        `SELECT p.*, sk.id_user, sk.nama_kegiatan, sk.tanggal_mulai, sk.tanggal_selesai,
-                sk.waktu_mulai, sk.waktu_selesai
-         FROM pengajuan_peminjaman p
-         JOIN spesifikasi_kebutuhan sk ON sk.id_fsk = p.id_fsk
-         WHERE p.id_pengajuan = ?
-         LIMIT 1 FOR UPDATE`,
-        [id],
-      );
-      const row = rows[0];
-      if (!row) {
-        await connection.rollback();
-        return { outcome: 'NOT_FOUND' };
-      }
-      const status = String(row.status);
-      if (status !== 'WAITING_LOGISTIK' && status !== 'REVISION_LOGISTIK') {
-        await connection.rollback();
-        return { outcome: 'NOT_PENDING', status };
-      }
-
-      const newStatus =
-        input.keputusan === 'APPROVE'
-          ? 'APPROVED_LOGISTIK'
-          : input.keputusan === 'REVISION'
-            ? 'REVISION_LOGISTIK'
-            : 'REJECTED_LOGISTIK';
-      const keputusan =
-        input.keputusan === 'APPROVE'
-          ? 'APPROVED'
-          : input.keputusan === 'REVISION'
-            ? 'REVISION'
-            : 'REJECTED';
-
-      await connection.execute(
-        `INSERT INTO keputusan_logistik (id_pengajuan, id_user_logistik, keputusan, alasan)
-         VALUES (?, ?, ?, ?)`,
-        [id, idUserLogistik, keputusan, input.alasan ?? null],
-      );
-
-      if (input.keputusan === 'APPROVE') {
-        const mulai = combineDateTime(row.tanggal_mulai, row.waktu_mulai);
-        const selesai = combineDateTime(row.tanggal_selesai, row.waktu_selesai);
-        const idPaket = row.id_paket == null ? null : Number(row.id_paket);
-        if (idPaket) {
-          const [rooms] = await connection.execute<RowDataPacket[]>(
-            'SELECT id_ruangan FROM paket_ruangan WHERE id_paket = ?',
-            [idPaket],
-          );
-          for (const room of rooms) {
-            await connection.execute(
-              `INSERT INTO alokasi_ruangan
-                 (id_pengajuan, id_ruangan, tanggal_mulai, tanggal_selesai, status_alokasi)
-               VALUES (?, ?, ?, ?, 'ALLOCATED')`,
-              [id, Number(room.id_ruangan), mulai, selesai],
-            );
-          }
-          const [items] = await connection.execute<RowDataPacket[]>(
-            'SELECT id_logistik, jumlah FROM paket_logistik WHERE id_paket = ?',
-            [idPaket],
-          );
-          for (const item of items) {
-            await connection.execute(
-              `INSERT INTO alokasi_logistik
-                 (id_pengajuan, id_logistik, jumlah_dialokasikan, tanggal_mulai, tanggal_selesai, status_alokasi)
-               VALUES (?, ?, ?, ?, ?, 'ALLOCATED')`,
-              [id, Number(item.id_logistik), Number(item.jumlah), mulai, selesai],
-            );
-          }
-        }
-      }
-
-      await connection.execute(
-        `UPDATE pengajuan_peminjaman SET
-           status = ?,
-           alasan_penolakan = ?,
-           catatan_logistik = ?
-         WHERE id_pengajuan = ?`,
-        [
-          newStatus,
-          input.keputusan === 'REJECT' ? (input.alasan ?? null) : null,
-          input.alasan ?? null,
-          id,
-        ],
-      );
-
-      await this.insertHistory(
-        connection,
-        id,
-        status,
-        newStatus,
-        'LOGISTIK',
-        idUserLogistik,
-        input.alasan ?? null,
-      );
-
-      await connection.commit();
-      return {
-        outcome: 'OK',
-        previous_status: status,
-        status: newStatus,
-        id_user: Number(row.id_user),
-        nama_kegiatan: String(row.nama_kegiatan),
-      };
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  }
-
-  async issueSbp(id: number, idUserLogistik: number): Promise<LifecycleOutcome> {
-    const connection = await this.pool.getConnection();
-    try {
-      await connection.beginTransaction();
-      const [rows] = await connection.execute<RowDataPacket[]>(
-        'SELECT * FROM pengajuan_peminjaman WHERE id_pengajuan = ? LIMIT 1 FOR UPDATE',
-        [id],
-      );
-      const row = rows[0];
-      if (!row) {
-        await connection.rollback();
-        return { outcome: 'NOT_FOUND' };
-      }
-      const status = String(row.status);
-      if (status !== 'APPROVED_LOGISTIK') {
-        await connection.rollback();
-        return { outcome: 'INVALID_STATUS', status };
-      }
-
-      const nomorSbp = `SBP-${id}-${Date.now()}`;
-      const lokasi = `/documents/sbp/${nomorSbp}.pdf`;
-      const [result] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO sbp (id_pengajuan, id_user_penerbit, nomor_sbp, lokasi_dokumen)
-         VALUES (?, ?, ?, ?)`,
-        [id, idUserLogistik, nomorSbp, lokasi],
-      );
-      await connection.execute(
-        'UPDATE pengajuan_peminjaman SET status = ? WHERE id_pengajuan = ?',
-        ['ONGOING', id],
-      );
-      await this.insertHistory(
-        connection,
-        id,
-        'APPROVED_LOGISTIK',
-        'ONGOING',
-        'LOGISTIK',
-        idUserLogistik,
-        `SBP diterbitkan: ${nomorSbp}`,
-      );
-      await connection.commit();
-      return {
-        outcome: 'OK',
-        data: {
-          id_sbp: result.insertId,
-          nomor_sbp: nomorSbp,
-          lokasi_dokumen: lokasi,
-          tanggal_terbit: new Date(),
-          status: 'ONGOING',
-        },
-      };
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
   }
 
   async submitReturn(
