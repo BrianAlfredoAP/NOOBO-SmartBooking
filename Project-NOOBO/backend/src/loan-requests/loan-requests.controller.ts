@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -17,6 +18,11 @@ import {
   CancelLoanRequestDto,
   CreateLoanRequestDto,
 } from './dto/loan-request.dto.js';
+import {
+  InspectionDto,
+  LoanRequestQueryDto,
+  SubmitReturnDto,
+} from './dto/loan-lifecycle.dto.js';
 import { LoanRequestsService } from './loan-requests.service.js';
 
 @ApiTags('Loan Requests')
@@ -26,6 +32,14 @@ import { LoanRequestsService } from './loan-requests.service.js';
 export class LoanRequestsController {
   constructor(private readonly service: LoanRequestsService) {}
 
+  @Get()
+  list(
+    @Query() query: LoanRequestQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.list(query, user);
+  }
+
   @Get('draft/:fskId')
   @Roles('PEMINJAM')
   draft(
@@ -33,6 +47,22 @@ export class LoanRequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.draft(fskId, user);
+  }
+
+  @Get(':id')
+  detail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.detail(id, user);
+  }
+
+  @Get(':id/history')
+  history(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.history(id, user);
   }
 
   @Post()
@@ -52,5 +82,25 @@ export class LoanRequestsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.cancel(id, dto, user);
+  }
+
+  @Post(':id/return')
+  @Roles('PEMINJAM')
+  submitReturn(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SubmitReturnDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.submitReturn(id, dto, user);
+  }
+
+  @Post(':id/inspection')
+  @Roles('LOGISTIK')
+  inspect(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: InspectionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.inspect(id, dto, user);
   }
 }

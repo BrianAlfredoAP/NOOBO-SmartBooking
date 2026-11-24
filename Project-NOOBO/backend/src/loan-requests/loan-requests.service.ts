@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator.js';
+import { paginated } from '../common/dto/api-response.dto.js';
 import { BusinessException } from '../common/exceptions/business.exception.js';
 import { EmailService } from '../email/email.service.js';
-import { PENGAJUAN_STATUS } from '../entities/workflow/pengajuan-status.js';
+import { PENGAJUAN_STATUS, statusLabel } from '../entities/workflow/pengajuan-status.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { toRequestView } from './loan-requests.mapper.js';
 import { TokenKeputusan } from '../entities/workflow/token-keputusan.entity.js';
 import { FskService } from '../fsk/fsk.service.js';
 import type { PackageView } from '../recommendations/recommendations.repository.js';
@@ -17,6 +20,11 @@ import type {
   CancelLoanRequestDto,
   CreateLoanRequestDto,
 } from './dto/loan-request.dto.js';
+import type {
+  InspectionDto,
+  LoanRequestQueryDto,
+  SubmitReturnDto,
+} from './dto/loan-lifecycle.dto.js';
 import { LoanRequestsRepository } from './loan-requests.repository.js';
 
 @Injectable()
@@ -27,6 +35,7 @@ export class LoanRequestsService {
     private readonly repository: LoanRequestsRepository,
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
+    private readonly notifications?: NotificationsService,
   ) {}
 
   async draft(fskId: number, user: AuthenticatedUser) {
@@ -164,6 +173,117 @@ export class LoanRequestsService {
       message: 'Pengajuan dibatalkan',
       data: result.request.viewDetail(),
     };
+  }
+
+  async list(query: LoanRequestQueryDto, user: AuthenticatedUser) {
+    const idUser = user.role === 'PEMINJAM' ? user.id : null;
+    const { rows, total } = await this.repository.findMany({
+      status: query.status,
+      idUser,
+      page: query.page,
+      limit: query.limit,
+    });
+    const data: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      const idPaket = row.id_paket == null ? null : Number(row.id_paket);
+      const pkg = await this.repository.findPackageLines(idPaket);
+      data.push(toRequestView(row, pkg));
+    }
+    return paginated('Daftar pengajuan', data, total, query);
+  }
+
+  async detail(id: number, user: AuthenticatedUser) {
+    return { message: 'Detail pengajuan', data: await this.buildView(id, user) };
+  }
+
+  async history(id: number, user: AuthenticatedUser) {
+    await this.requireVisible(id, user);
+    const rows = await this.repository.listHistory(id);
+    return { message: 'Riwayat status pengajuan', data: rows };
+  }
+
+  async submitReturn(
+    id: number,
+    dto: SubmitReturnDto,
+    user: AuthenticatedUser,
+  ) {
+    const result = await this.repository.submitReturn(id, user.id, {
+      catatan: dto.catatan,
+      foto_kerusakan: dto.foto_kerusakan,
+      items: dto.items,
+    });
+    if (result.outcome === 'NOT_FOUND' || result.outcome === 'NOT_OWNER') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+    if (result.outcome === 'INVALID_STATUS') {
+      throw new BusinessException(
+        'RETURN_NOT_ALLOWED',
+        'Laporan pengembalian hanya dapat dikirim saat kegiatan berlangsung',
+        HttpStatus.CONFLICT,
+        [`Status saat ini: ${statusLabel(result.status)}`],
+      );
+    }
+    return { message: 'Laporan pengembalian dikirim', data: result.data };
+  }
+
+  async inspect(id: number, dto: InspectionDto, user: AuthenticatedUser) {
+    const result = await this.repository.inspect(id, user.id, {
+      catatan: dto.catatan,
+      temuan: dto.temuan,
+    });
+    if (result.outcome === 'NOT_FOUND') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+    if (result.outcome === 'INVALID_STATUS') {
+      throw new BusinessException(
+        'INSPECTION_NOT_ALLOWED',
+        'Pemeriksaan hanya dapat dilakukan setelah pengembalian dilaporkan',
+        HttpStatus.CONFLICT,
+        [`Status saat ini: ${statusLabel(result.status)}`],
+      );
+    }
+
+    const view = await this.repository.findDetail(id);
+    if (view && view.id_user != null) {
+      await this.notifications?.notify({
+        id_user: Number(view.id_user),
+        id_pengajuan: id,
+        judul: 'Pemeriksaan pengembalian selesai',
+        isi: `Pengajuan ${String(view.nama_kegiatan)} telah selesai.`,
+        kategori: 'Pengembalian',
+      });
+    }
+
+    if (result.outcome !== 'OK') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+    return { message: 'Pemeriksaan diselesaikan', data: result.data };
+  }
+
+  private async buildView(
+    id: number,
+    user: AuthenticatedUser,
+  ): Promise<Record<string, unknown>> {
+    const idUser = user.role === 'PEMINJAM' ? user.id : null;
+    const row = await this.repository.findDetail(id, idUser);
+    if (!row) throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    const idPaket = row.id_paket == null ? null : Number(row.id_paket);
+    const pkg = await this.repository.findPackageLines(idPaket);
+    const history = await this.repository.listHistory(id);
+    const returnDetails = await this.repository.listReturnDetails(id);
+    return toRequestView(row, pkg, {
+      history,
+      return_details: returnDetails,
+    });
+  }
+
+  private async requireVisible(
+    id: number,
+    user: AuthenticatedUser,
+  ): Promise<void> {
+    const idUser = user.role === 'PEMINJAM' ? user.id : null;
+    const row = await this.repository.findDetail(id, idUser);
+    if (!row) throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
   }
 
   private async requireSelectedPackage(idFsk: number): Promise<PackageView> {

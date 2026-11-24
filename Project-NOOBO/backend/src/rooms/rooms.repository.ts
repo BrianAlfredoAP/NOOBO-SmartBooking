@@ -59,14 +59,22 @@ export class RoomsRepository {
 
   async create(dto: CreateRoomDto): Promise<number> {
     const [result] = await this.pool.execute<ResultSetHeader>(
-      `INSERT INTO ruangan (nama_ruangan, jenis, lokasi, kapasitas, kondisi_fasilitas)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO ruangan
+         (nama_ruangan, jenis, lokasi, kapasitas, kondisi_fasilitas,
+          kode_ruangan, gedung, lantai, fasilitas, foto, deskripsi)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         dto.nama_ruangan,
         dto.jenis,
         dto.lokasi,
         dto.kapasitas,
         dto.kondisi_fasilitas ?? 'Baik',
+        dto.kode_ruangan ?? null,
+        dto.gedung ?? null,
+        dto.lantai ?? null,
+        dto.fasilitas ? JSON.stringify(dto.fasilitas) : null,
+        dto.foto ?? null,
+        dto.deskripsi ?? null,
       ],
     );
     return result.insertId;
@@ -80,7 +88,13 @@ export class RoomsRepository {
          lokasi = COALESCE(?, lokasi),
          kapasitas = COALESCE(?, kapasitas),
          kondisi_fasilitas = COALESCE(?, kondisi_fasilitas),
-         status_aktif = COALESCE(?, status_aktif)
+         status_aktif = COALESCE(?, status_aktif),
+         kode_ruangan = COALESCE(?, kode_ruangan),
+         gedung = COALESCE(?, gedung),
+         lantai = COALESCE(?, lantai),
+         fasilitas = COALESCE(?, fasilitas),
+         foto = COALESCE(?, foto),
+         deskripsi = COALESCE(?, deskripsi)
        WHERE id_ruangan = ?`,
       [
         dto.nama_ruangan ?? null,
@@ -89,6 +103,12 @@ export class RoomsRepository {
         dto.kapasitas ?? null,
         dto.kondisi_fasilitas ?? null,
         dto.status_aktif ?? null,
+        dto.kode_ruangan ?? null,
+        dto.gedung ?? null,
+        dto.lantai ?? null,
+        dto.fasilitas ? JSON.stringify(dto.fasilitas) : null,
+        dto.foto ?? null,
+        dto.deskripsi ?? null,
         id,
       ],
     );

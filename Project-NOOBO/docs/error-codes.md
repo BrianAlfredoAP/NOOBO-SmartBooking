@@ -71,6 +71,14 @@ Semua error dikembalikan dengan format global:
 | `APPROVAL_NOT_PENDING` | 409 | Sprint 4 — pengajuan tidak lagi menunggu Pembina |
 | `APPROVAL_REASON_REQUIRED` | 400 | Sprint 4 — alasan wajib saat menolak |
 
-## Direncanakan (Sprint 5+)
+## Sprint 5 — Keputusan Logistik & SBP
 
-`ROOM_CONFLICT`, `STOCK_INSUFFICIENT`, `DOCUMENT_NOT_AVAILABLE`, `APPROVAL_INCOMPLETE`.
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `ROOM_CONFLICT` | 409 | Sprint 5 — ruangan bentrok pada cek ulang saat Logistik menyetujui; detail di `errors[]` |
+| `STOCK_INSUFFICIENT` | 409 | Sprint 5 — stok logistik tidak mencukupi (diminta vs tersedia); detail di `errors[]` |
+| `LOGISTICS_REASON_REQUIRED` | 400 | Sprint 5 — alasan wajib saat REVISION/REJECT |
+| `LOGISTICS_NOT_PENDING` | 409 | Sprint 5 — pengajuan tidak lagi menunggu Logistik |
+| `APPROVAL_INCOMPLETE` | 409 | Sprint 5 — SBP diminta sebelum persetujuan Pembina + Logistik lengkap |
+| `DOCUMENT_NOT_AVAILABLE` | 404 | Sprint 5 — SBP belum diterbitkan untuk pengajuan ini |
+| `RETURN_FORM_UNAVAILABLE` | 409 | Sprint 5 — form pengembalian diminta saat kegiatan belum berlangsung |

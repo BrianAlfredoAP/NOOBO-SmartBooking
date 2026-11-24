@@ -6,6 +6,7 @@ export class User {
   private _password_hash: string;
   private _status_aktif: boolean;
   private _created_at: Date;
+  private _whatsapp: string;
 
   constructor(
     id_user: number,
@@ -15,6 +16,7 @@ export class User {
     password_hash: string,
     status_aktif: boolean = true,
     created_at: Date = new Date(),
+    whatsapp: string = '',
   ) {
     this._id_user = id_user;
     this._role_id = role_id;
@@ -23,6 +25,7 @@ export class User {
     this._password_hash = password_hash;
     this._status_aktif = status_aktif;
     this._created_at = created_at;
+    this._whatsapp = whatsapp;
   }
 
   // Public getters (+)
@@ -50,6 +53,10 @@ export class User {
     return this._created_at;
   }
 
+  public get whatsapp(): string {
+    return this._whatsapp;
+  }
+
   // Sensitive field password_hash (-) is exposed only to the auth layer.
   public getPasswordHash(): string {
     return this._password_hash;
@@ -64,6 +71,7 @@ export class User {
       String(row.password_hash),
       Boolean(row.status_aktif),
       row.created_at instanceof Date ? row.created_at : new Date(String(row.created_at)),
+      row.whatsapp == null ? '' : String(row.whatsapp as string | number),
     );
   }
 
@@ -74,6 +82,9 @@ export class User {
     if (newData.email !== undefined) {
       this._email = newData.email;
     }
+    if (newData.whatsapp !== undefined) {
+      this._whatsapp = newData.whatsapp;
+    }
     return true;
   }
 
@@ -82,6 +93,7 @@ export class User {
       userId: this._id_user,
       nama: this._nama,
       roleId: this._role_id,
+      whatsapp: this._whatsapp,
       status: this._status_aktif ? 'Aktif' : 'Non-Aktif',
     };
   }

@@ -63,13 +63,20 @@ export class LogisticItemsRepository {
 
   async create(dto: CreateLogisticItemDto): Promise<number> {
     const [result] = await this.pool.execute<ResultSetHeader>(
-      `INSERT INTO logistik (nama_logistik, jenis, stok_total, kondisi_fasilitas)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO logistik
+         (nama_logistik, jenis, stok_total, kondisi_fasilitas,
+          kode_logistik, lokasi, satuan, foto, deskripsi)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         dto.nama_logistik,
         dto.jenis,
         dto.stok_total,
         dto.kondisi_fasilitas ?? 'Baik',
+        dto.kode_logistik ?? null,
+        dto.lokasi ?? null,
+        dto.satuan ?? 'unit',
+        dto.foto ?? null,
+        dto.deskripsi ?? null,
       ],
     );
     return result.insertId;
@@ -82,7 +89,12 @@ export class LogisticItemsRepository {
          jenis = COALESCE(?, jenis),
          stok_total = COALESCE(?, stok_total),
          kondisi_fasilitas = COALESCE(?, kondisi_fasilitas),
-         status_aktif = COALESCE(?, status_aktif)
+         status_aktif = COALESCE(?, status_aktif),
+         kode_logistik = COALESCE(?, kode_logistik),
+         lokasi = COALESCE(?, lokasi),
+         satuan = COALESCE(?, satuan),
+         foto = COALESCE(?, foto),
+         deskripsi = COALESCE(?, deskripsi)
        WHERE id_logistik = ?`,
       [
         dto.nama_logistik ?? null,
@@ -90,6 +102,11 @@ export class LogisticItemsRepository {
         dto.stok_total ?? null,
         dto.kondisi_fasilitas ?? null,
         dto.status_aktif ?? null,
+        dto.kode_logistik ?? null,
+        dto.lokasi ?? null,
+        dto.satuan ?? null,
+        dto.foto ?? null,
+        dto.deskripsi ?? null,
         id,
       ],
     );

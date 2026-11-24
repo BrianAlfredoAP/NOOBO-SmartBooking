@@ -5,6 +5,11 @@ export class Logistik {
   private _stok_total: number;
   private _kondisi_fasilitas: string;
   private _status_aktif: boolean;
+  private _kode_logistik: string;
+  private _lokasi: string;
+  private _satuan: string;
+  private _foto: string;
+  private _deskripsi: string;
 
   constructor(
     id_logistik: number,
@@ -13,6 +18,11 @@ export class Logistik {
     stok_total: number,
     kondisi_fasilitas: string,
     status_aktif: boolean = true,
+    kode_logistik: string = '',
+    lokasi: string = '',
+    satuan: string = 'unit',
+    foto: string = '',
+    deskripsi: string = '',
   ) {
     this._id_logistik = id_logistik;
     this._nama_logistik = nama_logistik;
@@ -20,6 +30,11 @@ export class Logistik {
     this._stok_total = stok_total;
     this._kondisi_fasilitas = kondisi_fasilitas;
     this._status_aktif = status_aktif;
+    this._kode_logistik = kode_logistik;
+    this._lokasi = lokasi;
+    this._satuan = satuan;
+    this._foto = foto;
+    this._deskripsi = deskripsi;
   }
 
   public get id_logistik(): number {
@@ -46,6 +61,26 @@ export class Logistik {
     return this._status_aktif;
   }
 
+  public get kode_logistik(): string {
+    return this._kode_logistik;
+  }
+
+  public get lokasi(): string {
+    return this._lokasi;
+  }
+
+  public get satuan(): string {
+    return this._satuan;
+  }
+
+  public get foto(): string {
+    return this._foto;
+  }
+
+  public get deskripsi(): string {
+    return this._deskripsi;
+  }
+
   public updateStok(qty: number): boolean {
     if (!Number.isInteger(qty) || qty === 0 || this._stok_total + qty < 0) return false;
     this._stok_total += qty;
@@ -60,6 +95,11 @@ export class Logistik {
       Number(row.stok_total),
       String(row.kondisi_fasilitas),
       Boolean(row.status_aktif),
+      row.kode_logistik == null ? '' : String(row.kode_logistik as string | number),
+      row.lokasi == null ? '' : String(row.lokasi as string | number),
+      row.satuan == null ? 'unit' : String(row.satuan as string | number),
+      row.foto == null ? '' : String(row.foto as string | number),
+      row.deskripsi == null ? '' : String(row.deskripsi as string | number),
     );
   }
 
@@ -69,6 +109,11 @@ export class Logistik {
       nama_logistik: this._nama_logistik,
       jenis: this._jenis,
       stok_total: this._stok_total,
+      kode_logistik: this._kode_logistik,
+      lokasi: this._lokasi,
+      satuan: this._satuan,
+      foto: this._foto,
+      deskripsi: this._deskripsi,
       kondisi_fasilitas: this._kondisi_fasilitas,
       status_aktif: this._status_aktif,
     };

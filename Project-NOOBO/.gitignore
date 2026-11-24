@@ -12,6 +12,9 @@ dist/
 # coverage
 coverage/
 
+# generated documents (SBP/SBPG)
+backend/storage/
+
 # misc
 .DS_Store
 *.log

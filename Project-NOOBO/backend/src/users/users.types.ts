@@ -7,4 +7,5 @@ export interface UserRecord {
   password_hash: string;
   status_aktif: boolean;
   created_at: Date;
+  whatsapp?: string | null;
 }

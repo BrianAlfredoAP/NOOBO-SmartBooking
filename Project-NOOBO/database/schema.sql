@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(100) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   status_aktif BOOLEAN NOT NULL DEFAULT TRUE,
+  whatsapp VARCHAR(30) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   waktu_dibuat TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   waktu_kedaluwarsa TIMESTAMP NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  INDEX idx_sessions_token (token_hash),
   CONSTRAINT fk_sessions_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -77,6 +79,12 @@ CREATE TABLE IF NOT EXISTS ruangan (
   nama_ruangan VARCHAR(100) NOT NULL,
   jenis VARCHAR(50) NOT NULL,
   lokasi VARCHAR(100) NOT NULL,
+  kode_ruangan VARCHAR(50) NULL,
+  gedung VARCHAR(100) NULL,
+  lantai VARCHAR(20) NULL,
+  fasilitas JSON NULL,
+  foto VARCHAR(255) NULL,
+  deskripsi TEXT NULL,
   kapasitas INT NOT NULL,
   kondisi_fasilitas VARCHAR(50) NOT NULL DEFAULT 'Baik',
   status_aktif BOOLEAN NOT NULL DEFAULT TRUE
@@ -95,6 +103,11 @@ CREATE TABLE IF NOT EXISTS logistik (
   nama_logistik VARCHAR(100) NOT NULL,
   jenis VARCHAR(50) NOT NULL,
   stok_total INT NOT NULL DEFAULT 0,
+  kode_logistik VARCHAR(50) NULL,
+  lokasi VARCHAR(100) NULL,
+  satuan VARCHAR(20) NULL,
+  foto VARCHAR(255) NULL,
+  deskripsi TEXT NULL,
   kondisi_fasilitas VARCHAR(50) NOT NULL DEFAULT 'Baik',
   status_aktif BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB;
@@ -136,9 +149,11 @@ CREATE TABLE IF NOT EXISTS pengajuan_peminjaman (
   tanggal_pengajuan DATETIME DEFAULT CURRENT_TIMESTAMP,
   status VARCHAR(50) NOT NULL DEFAULT 'SUBMITTED',
   catatan TEXT,
+  alasan_penolakan TEXT NULL,
+  catatan_logistik TEXT NULL,
   INDEX idx_pengajuan_status (status),
   CONSTRAINT fk_pengajuan_fsk FOREIGN KEY (id_fsk) REFERENCES spesifikasi_kebutuhan(id_fsk),
-  CONSTRAINT fk_pengajuan_paket FOREIGN KEY (id_paket) REFERENCES paket_rekomendasi(id_paket),
+  CONSTRAINT fk_pengajuan_paket FOREIGN KEY (id_paket) REFERENCES paket_rekomendasi(id_paket) ON DELETE SET NULL,
   CONSTRAINT fk_pengajuan_pembina FOREIGN KEY (id_pembina) REFERENCES pembina(id_pembina),
   CONSTRAINT fk_pengajuan_aturan FOREIGN KEY (id_aturan) REFERENCES aturan_peminjaman(id_aturan)
 ) ENGINE=InnoDB;
@@ -265,6 +280,20 @@ CREATE TABLE IF NOT EXISTS request_status_history (
   note TEXT NULL,
   at DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_history_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS notifikasi (
+  id_notifikasi INT AUTO_INCREMENT PRIMARY KEY,
+  id_user INT NOT NULL,
+  id_pengajuan INT NULL,
+  judul VARCHAR(150) NOT NULL,
+  isi TEXT NOT NULL,
+  kategori VARCHAR(50) NOT NULL DEFAULT 'Pengajuan',
+  sudah_dibaca BOOLEAN NOT NULL DEFAULT FALSE,
+  dibuat_pada DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_notifikasi_user (id_user, sudah_dibaca),
+  CONSTRAINT fk_notifikasi_user FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE,
+  CONSTRAINT fk_notifikasi_pengajuan FOREIGN KEY (id_pengajuan) REFERENCES pengajuan_peminjaman(id_pengajuan) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS email_logs (

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { KONDISI_FASILITAS } from '../../common/constants.js';
 import { PaginationDto } from '../../common/dto/pagination.dto.js';
 import { toOptionalBoolean } from '../../common/dto/boolean.transform.js';
@@ -34,6 +34,41 @@ export class CreateRoomDto {
   @IsOptional()
   @IsIn(KONDISI_FASILITAS)
   kondisi_fasilitas?: string;
+
+  @ApiPropertyOptional({ maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  kode_ruangan?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  gedung?: string;
+
+  @ApiPropertyOptional({ maxLength: 20 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  lantai?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['Proyektor', 'Papan tulis'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fasilitas?: string[];
+
+  @ApiPropertyOptional({ maxLength: 255 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  foto?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deskripsi?: string;
 }
 
 export class UpdateRoomDto extends PartialType(CreateRoomDto) {
