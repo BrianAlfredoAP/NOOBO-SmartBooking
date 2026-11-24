@@ -4,7 +4,8 @@ import { DATABASE_POOL } from '../database/database.constants.js';
 import type { UserRecord } from './users.types.js';
 
 const USER_SELECT = `
-  SELECT u.id_user, u.role_id, r.name AS role, u.nama, u.email, u.password_hash, u.status_aktif, u.created_at
+  SELECT u.id_user, u.role_id, r.name AS role, u.nama, u.email, u.password_hash,
+         u.status_aktif, u.whatsapp, u.created_at
   FROM users u
   JOIN roles r ON u.role_id = r.id
 `;
@@ -50,5 +51,18 @@ export class UsersRepository {
     const created = await this.findById(result.insertId);
     if (!created) throw new Error('User created but could not be read back');
     return created;
+  }
+
+  async updateProfile(
+    id: number,
+    input: { nama?: string; whatsapp?: string },
+  ): Promise<void> {
+    await this.pool.execute(
+      `UPDATE users SET
+         nama = COALESCE(?, nama),
+         whatsapp = COALESCE(?, whatsapp)
+       WHERE id_user = ?`,
+      [input.nama ?? null, input.whatsapp ?? null, id],
+    );
   }
 }

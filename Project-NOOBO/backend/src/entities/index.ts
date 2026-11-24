@@ -2,6 +2,7 @@
 export * from './core/role.entity.js';
 export * from './core/user.entity.js';
 export * from './core/session.entity.js';
+export * from './core/notifikasi.entity.js';
 
 // Requirements & Recommendation (FSK)
 export * from './fsk/spesifikasi-kebutuhan.entity.js';

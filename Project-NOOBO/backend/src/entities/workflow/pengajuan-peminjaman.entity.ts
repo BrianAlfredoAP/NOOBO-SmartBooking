@@ -1,4 +1,4 @@
-import { PENGAJUAN_STATUS, canTransition } from './pengajuan-status.js';
+import { PENGAJUAN_STATUS, canTransition, statusLabel } from './pengajuan-status.js';
 
 export class PengajuanPeminjaman {
   private _id_pengajuan: number;
@@ -136,6 +136,7 @@ export class PengajuanPeminjaman {
       nomor_pengajuan: this._nomor_pengajuan,
       tanggal_pengajuan: this._tanggal_pengajuan,
       status: this._status,
+      status_label: statusLabel(this._status),
       catatan: this._catatan,
     };
   }

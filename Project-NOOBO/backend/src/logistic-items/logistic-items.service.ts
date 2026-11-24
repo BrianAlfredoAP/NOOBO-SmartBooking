@@ -55,6 +55,11 @@ export class LogisticItemsService {
       stok_total: dto.stok_total,
       kondisi_fasilitas: dto.kondisi_fasilitas,
       status_aktif: dto.status_aktif,
+      kode_logistik: dto.kode_logistik,
+      lokasi: dto.lokasi,
+      satuan: dto.satuan,
+      foto: dto.foto,
+      deskripsi: dto.deskripsi,
     };
     if (dto.stok_total !== undefined && dto.stok_total !== item.stok_total) {
       if (!item.updateStok(dto.stok_total - item.stok_total)) {

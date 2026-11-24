@@ -28,6 +28,35 @@ export class CreateLogisticItemDto {
   @IsOptional()
   @IsIn(KONDISI_FASILITAS)
   kondisi_fasilitas?: string;
+
+  @ApiPropertyOptional({ maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  kode_logistik?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  lokasi?: string;
+
+  @ApiPropertyOptional({ maxLength: 20 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  satuan?: string;
+
+  @ApiPropertyOptional({ maxLength: 255 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  foto?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deskripsi?: string;
 }
 
 export class UpdateLogisticItemDto extends PartialType(CreateLogisticItemDto) {

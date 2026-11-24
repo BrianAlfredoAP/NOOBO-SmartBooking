@@ -10,6 +10,7 @@ import { FskModule } from './fsk/fsk.module.js';
 import { LoanRequestsModule } from './loan-requests/loan-requests.module.js';
 import { LoanRulesModule } from './loan-rules/loan-rules.module.js';
 import { LogisticItemsModule } from './logistic-items/logistic-items.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { PembinaModule } from './pembina/pembina.module.js';
 import { RecommendationsModule } from './recommendations/recommendations.module.js';
 import { RoomsModule } from './rooms/rooms.module.js';
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module.js';
     RecommendationsModule,
     LoanRequestsModule,
     ApprovalsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

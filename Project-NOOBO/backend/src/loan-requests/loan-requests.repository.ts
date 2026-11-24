@@ -15,6 +15,29 @@ import { PengajuanPeminjaman } from '../entities/workflow/pengajuan-peminjaman.e
 
 const TERMINAL_PLACEHOLDERS = TERMINAL_REQUEST_STATUSES.map(() => '?').join(', ');
 
+function toDateString(value: unknown): string {
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return String((value as string | number) ?? '').slice(0, 10);
+}
+
+function normalizeTime(value: unknown): string {
+  const raw = String((value as string | number) ?? '00:00');
+  const match = /^(\d{1,2}):(\d{2})/.exec(raw);
+  if (!match) return '00:00';
+  return `${match[1].padStart(2, '0')}:${match[2]}`;
+}
+
+function combineDateTime(dateValue: unknown, timeValue: unknown): Date {
+  const dateStr = toDateString(dateValue);
+  const date = new Date(`${dateStr}T${normalizeTime(timeValue)}:00`);
+  return Number.isNaN(date.getTime()) ? new Date(dateStr) : date;
+}
+
 export interface CreateLoanRequestInput {
   id_user: number;
   id_fsk: number;
@@ -38,6 +61,88 @@ export type CancelLoanRequestOutcome =
   | { outcome: 'NOT_FOUND' }
   | { outcome: 'NOT_OWNER' }
   | { outcome: 'NOT_CANCELLABLE'; status: string };
+
+export interface LoanRequestFilter {
+  status?: string;
+  idUser?: number | null;
+  page: number;
+  limit: number;
+}
+
+export interface LogisticsDecisionInput {
+  keputusan: 'APPROVE' | 'REVISION' | 'REJECT';
+  alasan?: string;
+}
+
+export interface SubmitReturnInput {
+  catatan?: string;
+  foto_kerusakan?: string;
+  items: Array<{
+    id_alokasi_ruangan?: number;
+    id_alokasi_logistik?: number;
+    jumlah_dikembalikan: number;
+    kondisi_kembali: string;
+    catatan?: string;
+  }>;
+}
+
+export interface InspectionInput {
+  catatan?: string;
+  temuan?: Array<{
+    id_logistik?: number;
+    id_ruangan?: number;
+    jenis_temuan: string;
+    jumlah: number;
+    deskripsi: string;
+    foto_bukti?: string;
+  }>;
+}
+
+export type LogisticsDecisionOutcome =
+  | {
+      outcome: 'OK';
+      previous_status: string;
+      status: string;
+      id_user: number;
+      nama_kegiatan: string;
+    }
+  | { outcome: 'NOT_FOUND' }
+  | { outcome: 'NOT_PENDING'; status: string };
+
+export type LifecycleOutcome =
+  | { outcome: 'OK'; data: Record<string, unknown> }
+  | { outcome: 'NOT_FOUND' }
+  | { outcome: 'NOT_OWNER' }
+  | { outcome: 'INVALID_STATUS'; status: string };
+
+const REQUEST_SELECT = `
+  p.id_pengajuan, p.id_fsk, p.id_paket, p.id_pembina, p.email_pembina,
+  p.nomor_pengajuan, p.tanggal_pengajuan, p.status, p.catatan,
+  p.alasan_penolakan, p.catatan_logistik,
+  sk.id_user, sk.nama_kegiatan, sk.tanggal_mulai, sk.tanggal_selesai,
+  sk.waktu_mulai, sk.waktu_selesai, sk.jumlah_peserta, sk.tujuan_kegiatan,
+  u.nama AS borrower_nama, u.email AS borrower_email, u.whatsapp,
+  pr.nama_paket,
+  sbp.id_sbp, sbp.nomor_sbp, sbp.tanggal_terbit, sbp.lokasi_dokumen,
+  sbpg.id_sbpg, sbpg.waktu_kirim, sbpg.batas_waktu_kirim,
+  sbpg.status_ketepatan_waktu, sbpg.catatan_peminjam,
+  kl.keputusan AS keputusan_logistik, kl.alasan AS alasan_logistik,
+  kl.waktu_keputusan
+`;
+
+const REQUEST_FROM = `
+  FROM pengajuan_peminjaman p
+  JOIN spesifikasi_kebutuhan sk ON sk.id_fsk = p.id_fsk
+  JOIN users u ON u.id_user = sk.id_user
+  LEFT JOIN paket_rekomendasi pr ON pr.id_paket = p.id_paket
+  LEFT JOIN sbp ON sbp.id_pengajuan = p.id_pengajuan
+  LEFT JOIN sbpg ON sbpg.id_pengajuan = p.id_pengajuan
+  LEFT JOIN keputusan_logistik kl ON kl.id_keputusan_logistik = (
+    SELECT MAX(k2.id_keputusan_logistik)
+    FROM keputusan_logistik k2
+    WHERE k2.id_pengajuan = p.id_pengajuan
+  )
+`;
 
 @Injectable()
 export class LoanRequestsRepository {
@@ -201,6 +306,466 @@ export class LoanRequestsRepository {
 
       await connection.commit();
       return { outcome: 'CANCELLED', request };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async findMany(
+    filter: LoanRequestFilter,
+  ): Promise<{ rows: RowDataPacket[]; total: number }> {
+    const conditions: string[] = [];
+    const params: SqlParam[] = [];
+    if (filter.idUser != null) {
+      conditions.push('sk.id_user = ?');
+      params.push(filter.idUser);
+    }
+    if (filter.status) {
+      conditions.push('p.status = ?');
+      params.push(filter.status);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [countRows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total ${REQUEST_FROM} ${where}`,
+      params,
+    );
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT ${REQUEST_SELECT} ${REQUEST_FROM} ${where}
+       ORDER BY p.tanggal_pengajuan DESC, p.id_pengajuan DESC
+       LIMIT ? OFFSET ?`,
+      [...params, filter.limit, (filter.page - 1) * filter.limit],
+    );
+    return { rows, total: Number(countRows[0].total) };
+  }
+
+  async findDetail(
+    id: number,
+    idUser: number | null = null,
+  ): Promise<RowDataPacket | null> {
+    const conditions = ['p.id_pengajuan = ?'];
+    const params: SqlParam[] = [id];
+    if (idUser != null) {
+      conditions.push('sk.id_user = ?');
+      params.push(idUser);
+    }
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT ${REQUEST_SELECT} ${REQUEST_FROM}
+       WHERE ${conditions.join(' AND ')}
+       LIMIT 1`,
+      params,
+    );
+    return rows[0] ?? null;
+  }
+
+  async findPackageLines(idPaket: number | null): Promise<{
+    room: RowDataPacket | null;
+    logistics: RowDataPacket[];
+  }> {
+    if (!idPaket) return { room: null, logistics: [] };
+    const [roomRows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT r.* FROM paket_ruangan pr
+       JOIN ruangan r ON r.id_ruangan = pr.id_ruangan
+       WHERE pr.id_paket = ?
+       LIMIT 1`,
+      [idPaket],
+    );
+    const [logisticRows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT l.*, pl.jumlah FROM paket_logistik pl
+       JOIN logistik l ON l.id_logistik = pl.id_logistik
+       WHERE pl.id_paket = ?
+       ORDER BY pl.id_paket_logistik ASC`,
+      [idPaket],
+    );
+    return { room: roomRows[0] ?? null, logistics: logisticRows };
+  }
+
+  async listHistory(id: number): Promise<RowDataPacket[]> {
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT from_status, to_status, actor_type, actor_id, note, at
+       FROM request_status_history
+       WHERE id_pengajuan = ?
+       ORDER BY at ASC, id ASC`,
+      [id],
+    );
+    return rows;
+  }
+
+  async listReturnDetails(idPengajuan: number): Promise<RowDataPacket[]> {
+    const [rows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT d.* FROM detail_pengembalian d
+       JOIN sbpg s ON s.id_sbpg = d.id_sbpg
+       WHERE s.id_pengajuan = ?
+       ORDER BY d.id_detail_pengembalian ASC`,
+      [idPengajuan],
+    );
+    return rows;
+  }
+
+  async decideLogistics(
+    id: number,
+    idUserLogistik: number,
+    input: LogisticsDecisionInput,
+  ): Promise<LogisticsDecisionOutcome> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        `SELECT p.*, sk.id_user, sk.nama_kegiatan, sk.tanggal_mulai, sk.tanggal_selesai,
+                sk.waktu_mulai, sk.waktu_selesai
+         FROM pengajuan_peminjaman p
+         JOIN spesifikasi_kebutuhan sk ON sk.id_fsk = p.id_fsk
+         WHERE p.id_pengajuan = ?
+         LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const row = rows[0];
+      if (!row) {
+        await connection.rollback();
+        return { outcome: 'NOT_FOUND' };
+      }
+      const status = String(row.status);
+      if (status !== 'WAITING_LOGISTIK' && status !== 'REVISION_LOGISTIK') {
+        await connection.rollback();
+        return { outcome: 'NOT_PENDING', status };
+      }
+
+      const newStatus =
+        input.keputusan === 'APPROVE'
+          ? 'APPROVED_LOGISTIK'
+          : input.keputusan === 'REVISION'
+            ? 'REVISION_LOGISTIK'
+            : 'REJECTED_LOGISTIK';
+      const keputusan =
+        input.keputusan === 'APPROVE'
+          ? 'APPROVED'
+          : input.keputusan === 'REVISION'
+            ? 'REVISION'
+            : 'REJECTED';
+
+      await connection.execute(
+        `INSERT INTO keputusan_logistik (id_pengajuan, id_user_logistik, keputusan, alasan)
+         VALUES (?, ?, ?, ?)`,
+        [id, idUserLogistik, keputusan, input.alasan ?? null],
+      );
+
+      if (input.keputusan === 'APPROVE') {
+        const mulai = combineDateTime(row.tanggal_mulai, row.waktu_mulai);
+        const selesai = combineDateTime(row.tanggal_selesai, row.waktu_selesai);
+        const idPaket = row.id_paket == null ? null : Number(row.id_paket);
+        if (idPaket) {
+          const [rooms] = await connection.execute<RowDataPacket[]>(
+            'SELECT id_ruangan FROM paket_ruangan WHERE id_paket = ?',
+            [idPaket],
+          );
+          for (const room of rooms) {
+            await connection.execute(
+              `INSERT INTO alokasi_ruangan
+                 (id_pengajuan, id_ruangan, tanggal_mulai, tanggal_selesai, status_alokasi)
+               VALUES (?, ?, ?, ?, 'ALLOCATED')`,
+              [id, Number(room.id_ruangan), mulai, selesai],
+            );
+          }
+          const [items] = await connection.execute<RowDataPacket[]>(
+            'SELECT id_logistik, jumlah FROM paket_logistik WHERE id_paket = ?',
+            [idPaket],
+          );
+          for (const item of items) {
+            await connection.execute(
+              `INSERT INTO alokasi_logistik
+                 (id_pengajuan, id_logistik, jumlah_dialokasikan, tanggal_mulai, tanggal_selesai, status_alokasi)
+               VALUES (?, ?, ?, ?, ?, 'ALLOCATED')`,
+              [id, Number(item.id_logistik), Number(item.jumlah), mulai, selesai],
+            );
+          }
+        }
+      }
+
+      await connection.execute(
+        `UPDATE pengajuan_peminjaman SET
+           status = ?,
+           alasan_penolakan = ?,
+           catatan_logistik = ?
+         WHERE id_pengajuan = ?`,
+        [
+          newStatus,
+          input.keputusan === 'REJECT' ? (input.alasan ?? null) : null,
+          input.alasan ?? null,
+          id,
+        ],
+      );
+
+      await this.insertHistory(
+        connection,
+        id,
+        status,
+        newStatus,
+        'LOGISTIK',
+        idUserLogistik,
+        input.alasan ?? null,
+      );
+
+      await connection.commit();
+      return {
+        outcome: 'OK',
+        previous_status: status,
+        status: newStatus,
+        id_user: Number(row.id_user),
+        nama_kegiatan: String(row.nama_kegiatan),
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async issueSbp(id: number, idUserLogistik: number): Promise<LifecycleOutcome> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        'SELECT * FROM pengajuan_peminjaman WHERE id_pengajuan = ? LIMIT 1 FOR UPDATE',
+        [id],
+      );
+      const row = rows[0];
+      if (!row) {
+        await connection.rollback();
+        return { outcome: 'NOT_FOUND' };
+      }
+      const status = String(row.status);
+      if (status !== 'APPROVED_LOGISTIK') {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+
+      const nomorSbp = `SBP-${id}-${Date.now()}`;
+      const lokasi = `/documents/sbp/${nomorSbp}.pdf`;
+      const [result] = await connection.execute<ResultSetHeader>(
+        `INSERT INTO sbp (id_pengajuan, id_user_penerbit, nomor_sbp, lokasi_dokumen)
+         VALUES (?, ?, ?, ?)`,
+        [id, idUserLogistik, nomorSbp, lokasi],
+      );
+      await connection.execute(
+        'UPDATE pengajuan_peminjaman SET status = ? WHERE id_pengajuan = ?',
+        ['ONGOING', id],
+      );
+      await this.insertHistory(
+        connection,
+        id,
+        'APPROVED_LOGISTIK',
+        'ONGOING',
+        'LOGISTIK',
+        idUserLogistik,
+        `SBP diterbitkan: ${nomorSbp}`,
+      );
+      await connection.commit();
+      return {
+        outcome: 'OK',
+        data: {
+          id_sbp: result.insertId,
+          nomor_sbp: nomorSbp,
+          lokasi_dokumen: lokasi,
+          tanggal_terbit: new Date(),
+          status: 'ONGOING',
+        },
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async submitReturn(
+    id: number,
+    idUser: number,
+    input: SubmitReturnInput,
+  ): Promise<LifecycleOutcome> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        `SELECT p.*, sk.id_user, sk.tanggal_selesai, sk.waktu_selesai
+         FROM pengajuan_peminjaman p
+         JOIN spesifikasi_kebutuhan sk ON sk.id_fsk = p.id_fsk
+         WHERE p.id_pengajuan = ?
+         LIMIT 1 FOR UPDATE`,
+        [id],
+      );
+      const row = rows[0];
+      if (!row) {
+        await connection.rollback();
+        return { outcome: 'NOT_FOUND' };
+      }
+      if (Number(row.id_user) !== idUser) {
+        await connection.rollback();
+        return { outcome: 'NOT_OWNER' };
+      }
+      const status = String(row.status);
+      if (status !== 'ONGOING') {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+
+      const batas = new Date(
+        combineDateTime(row.tanggal_selesai, row.waktu_selesai).getTime() +
+          60 * 60 * 1000,
+      );
+      const waktuKirim = new Date();
+      const ketepatan =
+        waktuKirim.getTime() <= batas.getTime() ? 'TEPAT_WAKTU' : 'TERLAMBAT';
+      const [result] = await connection.execute<ResultSetHeader>(
+        `INSERT INTO sbpg
+           (id_pengajuan, batas_waktu_kirim, waktu_kirim, status_ketepatan_waktu,
+            catatan_peminjam, foto_kerusakan)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          batas,
+          waktuKirim,
+          ketepatan,
+          input.catatan ?? null,
+          input.foto_kerusakan ?? null,
+        ],
+      );
+      const idSbpg = result.insertId;
+      for (const item of input.items) {
+        await connection.execute(
+          `INSERT INTO detail_pengembalian
+             (id_sbpg, id_alokasi_ruangan, id_alokasi_logistik,
+              jumlah_dikembalikan, kondisi_kembali, catatan)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            idSbpg,
+            item.id_alokasi_ruangan ?? null,
+            item.id_alokasi_logistik ?? null,
+            item.jumlah_dikembalikan,
+            item.kondisi_kembali,
+            item.catatan ?? null,
+          ],
+        );
+      }
+      await connection.execute(
+        'UPDATE pengajuan_peminjaman SET status = ? WHERE id_pengajuan = ?',
+        ['RETURN_REPORTED', id],
+      );
+      await this.insertHistory(
+        connection,
+        id,
+        'ONGOING',
+        'RETURN_REPORTED',
+        'PEMINJAM',
+        idUser,
+        input.catatan ?? null,
+      );
+      await connection.commit();
+      return {
+        outcome: 'OK',
+        data: {
+          id_sbpg: idSbpg,
+          status: 'RETURN_REPORTED',
+          status_ketepatan_waktu: ketepatan,
+          batas_waktu_kirim: batas,
+          waktu_kirim: waktuKirim,
+        },
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async inspect(
+    id: number,
+    idUserLogistik: number,
+    input: InspectionInput,
+  ): Promise<LifecycleOutcome> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        'SELECT * FROM pengajuan_peminjaman WHERE id_pengajuan = ? LIMIT 1 FOR UPDATE',
+        [id],
+      );
+      const row = rows[0];
+      if (!row) {
+        await connection.rollback();
+        return { outcome: 'NOT_FOUND' };
+      }
+      const status = String(row.status);
+      if (status !== 'RETURN_REPORTED') {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+      const [sbpgRows] = await connection.execute<RowDataPacket[]>(
+        'SELECT id_sbpg FROM sbpg WHERE id_pengajuan = ? LIMIT 1',
+        [id],
+      );
+      if (!sbpgRows[0]) {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+      const idSbpg = Number(sbpgRows[0].id_sbpg);
+      const [hasil] = await connection.execute<ResultSetHeader>(
+        `INSERT INTO hasil_pemeriksaan
+           (id_pengajuan, id_sbpg, id_user_pemeriksa, status_pemeriksaan, catatan)
+         VALUES (?, ?, ?, 'COMPLETED', ?)`,
+        [id, idSbpg, idUserLogistik, input.catatan ?? null],
+      );
+      for (const temuan of input.temuan ?? []) {
+        await connection.execute(
+          `INSERT INTO temuan_pemeriksaan
+             (id_hasil_pemeriksaan, id_logistik, id_ruangan, jenis_temuan, jumlah, deskripsi, foto_bukti)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            hasil.insertId,
+            temuan.id_logistik ?? null,
+            temuan.id_ruangan ?? null,
+            temuan.jenis_temuan,
+            temuan.jumlah,
+            temuan.deskripsi,
+            temuan.foto_bukti ?? null,
+          ],
+        );
+      }
+      await connection.execute(
+        `UPDATE alokasi_ruangan SET status_alokasi = 'RELEASED' WHERE id_pengajuan = ?`,
+        [id],
+      );
+      await connection.execute(
+        `UPDATE alokasi_logistik SET status_alokasi = 'RELEASED' WHERE id_pengajuan = ?`,
+        [id],
+      );
+      await connection.execute(
+        'UPDATE pengajuan_peminjaman SET status = ? WHERE id_pengajuan = ?',
+        ['COMPLETED', id],
+      );
+      await this.insertHistory(
+        connection,
+        id,
+        'RETURN_REPORTED',
+        'COMPLETED',
+        'LOGISTIK',
+        idUserLogistik,
+        input.catatan ?? null,
+      );
+      await connection.commit();
+      return {
+        outcome: 'OK',
+        data: {
+          id_hasil_pemeriksaan: hasil.insertId,
+          status: 'COMPLETED',
+          jumlah_temuan: (input.temuan ?? []).length,
+        },
+      };
     } catch (error) {
       await connection.rollback();
       throw error;
