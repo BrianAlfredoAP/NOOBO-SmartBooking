@@ -112,7 +112,13 @@ export class LoanRequestsService {
       token_kedaluwarsa_pada: token.kedaluwarsa_pada,
     });
 
-    const approvalUrl = `${this.config.get<string>('APP_URL') ?? 'http://localhost:3000'}/api/v1/approvals/${rawToken}`;
+    const appBaseUrl = (
+      this.config.get<string>('APP_URL') ?? 'http://localhost:5173'
+    )
+      .split(',')[0]
+      .trim()
+      .replace(/\/$/, '');
+    const approvalUrl = `${appBaseUrl}/pembina/approval/${rawToken}`;
     const email = await this.emailService.send({
       id_pengajuan: created.id_pengajuan,
       to_email: pembina.email_pembina,

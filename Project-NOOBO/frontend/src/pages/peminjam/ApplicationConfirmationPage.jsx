@@ -21,15 +21,33 @@ function SummarySection({ title, icon: Icon, onEdit, children }) {
 function ApplicationConfirmationPage() {
   const navigate = useNavigate()
   const {
-    fsk, recommendations, selectedRoom, selectedLogistics, supervisorEmail,
-    setFskStep, clearRecommendations, submitApplication,
+    fsk,
+    recommendations,
+    selectedRoom,
+    supervisorEmail,
+    selectedPembinaId,
+    pembinaList = [],
+    setFskStep,
+    clearRecommendations,
+    submitApplication,
   } = useOutletContext()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const room = recommendations?.rooms.find((option) => option.id === selectedRoom)
-  const logistics = recommendations?.logistics.filter(({ id }) => selectedLogistics.includes(id)) ?? []
+  const logistics = room?.logistics || recommendations?.logistics || []
+  const selectedPembina = pembinaList.find((item) => String(item.id) === String(selectedPembinaId))
 
   if (!room) {
-    return <div className="workflow-page"><Card className="workflow-card workflow-empty"><h1>Pilihan ruangan tidak ditemukan</h1><p>Pilih kembali rekomendasi sebelum mengonfirmasi pengajuan.</p><Link className="text-link" to="/peminjam/ajukan/rekomendasi">Kembali ke rekomendasi</Link></Card></div>
+    return (
+      <div className="workflow-page">
+        <Card className="workflow-card workflow-empty">
+          <h1>Pilihan ruangan tidak ditemukan</h1>
+          <p>Pilih kembali rekomendasi sebelum mengonfirmasi pengajuan.</p>
+          <Link className="text-link" to="/peminjam/ajukan/rekomendasi">Kembali ke rekomendasi</Link>
+        </Card>
+      </div>
+    )
   }
 
   const editAt = (step) => {
@@ -38,9 +56,19 @@ function ApplicationConfirmationPage() {
     navigate('/peminjam/ajukan')
   }
 
-  const finishSubmission = () => {
-    setConfirmOpen(false)
-    submitApplication()
+  const finishSubmission = async () => {
+    if (submitting) return
+    setSubmitError('')
+    setSubmitting(true)
+    try {
+      await submitApplication()
+      setConfirmOpen(false)
+    } catch (error) {
+      setConfirmOpen(false)
+      setSubmitError(error.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -49,7 +77,7 @@ function ApplicationConfirmationPage() {
       <header className="workflow-heading">
         <p className="eyebrow">TAHAP 2 · FPP</p>
         <h1>Konfirmasi Pengajuan</h1>
-        <p className="page-description">Periksa kembali data pengajuan peminjaman Anda.</p>
+        <p className="page-description">Periksa kembali data pengajuan peminjaman Anda sebelum dikirim ke Pembina.</p>
       </header>
 
       <SummarySection icon={ContactRound} onEdit={() => editAt(0)} title="Data Peminjam">
@@ -57,7 +85,7 @@ function ApplicationConfirmationPage() {
           <div><dt>Nama</dt><dd>{fsk.borrowerName}</dd></div>
           <div><dt>Organisasi</dt><dd>{fsk.organization}</dd></div>
           <div><dt>Nomor WhatsApp</dt><dd>{fsk.whatsapp || 'Tidak dicantumkan'}</dd></div>
-          <div><dt>Email Pembina</dt><dd>{supervisorEmail}</dd></div>
+          <div><dt>Pembina</dt><dd>{selectedPembina ? `${selectedPembina.name} (${selectedPembina.email})` : supervisorEmail}</dd></div>
         </dl>
       </SummarySection>
 
@@ -85,10 +113,9 @@ function ApplicationConfirmationPage() {
       <SummarySection icon={MapPin} onEdit={() => navigate('/peminjam/ajukan/rekomendasi')} title="Ruangan yang Dipilih">
         <dl className="confirmation-details">
           <div><dt>Nama ruangan</dt><dd>{room.name}</dd></div>
-          <div><dt>Gedung &amp; lantai</dt><dd>{room.building}</dd></div>
-          <div><dt>Kapasitas</dt><dd>{room.capacity} orang · simulasi</dd></div>
-          <div><dt>Fasilitas tersedia</dt><dd>{room.equipment.join(', ') || 'Tidak tercatat pada data simulasi'}</dd></div>
-          <div><dt>Ketersediaan</dt><dd>{room.available ? 'Tersedia · simulasi' : 'Tidak tersedia · simulasi'}</dd></div>
+          <div><dt>Gedung &amp; lokasi</dt><dd>{room.building}</dd></div>
+          <div><dt>Kapasitas</dt><dd>{room.capacity} orang</dd></div>
+          <div><dt>Fasilitas tersedia</dt><dd>{room.equipment.join(', ') || 'Tidak ada catatan fasilitas bawaan'}</dd></div>
         </dl>
       </SummarySection>
 
@@ -97,20 +124,27 @@ function ApplicationConfirmationPage() {
           <div><ContactRound size={18} aria-hidden="true" /><h2>Pembina</h2></div>
           <Link className="confirmation-edit" to="/peminjam/ajukan/fpp">Ubah</Link>
         </div>
-        <dl className="confirmation-details"><div><dt>Email Pembina</dt><dd>{supervisorEmail}</dd></div></dl>
+        <dl className="confirmation-details">
+          <div><dt>Nama Pembina</dt><dd>{selectedPembina?.name || '-'}</dd></div>
+          <div><dt>Email Pembina</dt><dd>{supervisorEmail}</dd></div>
+        </dl>
       </Card>
 
-      <div className="confirmation-actions">
-        <Button onClick={() => navigate('/peminjam/ajukan/fpp')} type="button" variant="secondary">Kembali</Button>
-        <Button onClick={() => setConfirmOpen(true)} type="button">Ajukan Peminjaman<ArrowRight size={16} aria-hidden="true" /></Button>
-      </div>
-      <p className="demo-disclaimer">Mengirim di sini hanya membuat catatan demonstrasi; tidak ada email atau API yang dijalankan.</p>
+      {submitError && <p className="logistik-error" role="alert">{submitError}</p>}
 
-      <Modal className="workflow-modal" onClose={() => setConfirmOpen(false)} open={confirmOpen} title="Kirim pengajuan simulasi?">
-        <p className="modal-copy">Pengajuan akan dicatat sebagai diterima oleh sistem simulasi. Ini bukan persetujuan Pembina atau konfirmasi pemesanan.</p>
+      <div className="confirmation-actions">
+        <Button disabled={submitting} onClick={() => navigate('/peminjam/ajukan/fpp')} type="button" variant="secondary">Kembali</Button>
+        <Button disabled={submitting} onClick={() => setConfirmOpen(true)} type="button">
+          {submitting ? 'Mengirim…' : 'Ajukan Peminjaman'}
+          {!submitting && <ArrowRight size={16} aria-hidden="true" />}
+        </Button>
+      </div>
+
+      <Modal className="workflow-modal" onClose={() => !submitting && setConfirmOpen(false)} open={confirmOpen} title="Kirim pengajuan peminjaman?">
+        <p className="modal-copy">Pengajuan akan disimpan ke sistem dan tautan persetujuan dikirim ke email Pembina.</p>
         <div className="modal-actions">
-          <Button onClick={() => setConfirmOpen(false)} type="button" variant="secondary">Periksa kembali</Button>
-          <Button onClick={finishSubmission} type="button">Konfirmasi pengajuan</Button>
+          <Button disabled={submitting} onClick={() => setConfirmOpen(false)} type="button" variant="secondary">Periksa kembali</Button>
+          <Button disabled={submitting} onClick={finishSubmission} type="button">{submitting ? 'Mengirim…' : 'Konfirmasi pengajuan'}</Button>
         </div>
       </Modal>
     </div>

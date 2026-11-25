@@ -63,7 +63,7 @@ export function validateEnvironment(
     JWT_EXPIRES_IN: readString('JWT_EXPIRES_IN', '15m'),
     JWT_REFRESH_SECRET: readString('JWT_REFRESH_SECRET', 'dev-refresh-secret'),
     JWT_REFRESH_EXPIRES_IN: readString('JWT_REFRESH_EXPIRES_IN', '7d'),
-    APP_URL: readString('APP_URL', 'http://localhost:3000'),
+    APP_URL: readString('APP_URL', 'http://localhost:5173'),
     APPROVAL_TOKEN_TTL_HOURS: parsePositiveNumber(
       environment.APPROVAL_TOKEN_TTL_HOURS,
       'APPROVAL_TOKEN_TTL_HOURS',

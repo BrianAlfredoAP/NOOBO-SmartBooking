@@ -1,4 +1,7 @@
 export function isAwaitingLogistics(request, decisions = {}) {
+  if (request.status_code) {
+    return request.status_code === 'WAITING_LOGISTIK' || request.status_code === 'REVISION_LOGISTIK'
+  }
   const supervisorStatus = String(request.supervisorStatus || request.pembina || '')
   if (!/disetujui/i.test(supervisorStatus) || /menunggu/i.test(supervisorStatus)) return false
 
