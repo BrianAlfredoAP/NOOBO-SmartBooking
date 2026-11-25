@@ -5,7 +5,6 @@ import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
 import Input from '../../components/ui/Input.jsx'
 import Time24Input from '../../components/ui/Time24Input.jsx'
-import { demoEquipment } from '../../data/peminjam-demo.js'
 import { validateFskStep } from '../../utils/peminjam-workflow.js'
 import { formatTimeRange } from '../../utils/time-format.js'
 import StageProgress from '../../components/common/StageProgress.jsx'
@@ -15,36 +14,61 @@ const stages = ['Data & kegiatan', 'Jadwal', 'Fasilitas']
 function FskPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { fsk, setFsk, fskStep, setFskStep, generateRecommendations, clearRecommendations } = useOutletContext()
+  const {
+    fsk,
+    setFsk,
+    fskStep,
+    setFskStep,
+    equipmentCatalog = [],
+    generateRecommendations,
+    clearRecommendations,
+  } = useOutletContext()
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
   const updateField = (name, value) => {
     if (location.state?.from === '/peminjam/ajukan/rekomendasi') clearRecommendations()
     if (name === 'date') setFsk({ date: value, ...(!fsk.endDate || fsk.endDate === fsk.date ? { endDate: value } : {}) })
     else setFsk({ [name]: value })
     if (errors[name]) setErrors((current) => ({ ...current, [name]: '' }))
+    if (submitError) setSubmitError('')
   }
 
   const updateEquipment = (id, value) => {
     if (location.state?.from === '/peminjam/ajukan/rekomendasi') clearRecommendations()
     setFsk({ equipment: { ...fsk.equipment, [id]: value } })
+    if (submitError) setSubmitError('')
   }
 
-  const continueStep = (event) => {
+  const continueStep = async (event) => {
     event.preventDefault()
-    const nextErrors = validateFskStep(fskStep, fsk)
+    setSubmitError('')
+    const nextErrors = validateFskStep(fskStep, fsk, equipmentCatalog)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) return
-    if (fskStep < stages.length - 1) setFskStep(fskStep + 1)
-    else generateRecommendations()
+    if (fskStep < stages.length - 1) {
+      setFskStep(fskStep + 1)
+      return
+    }
+    setSubmitting(true)
+    try {
+      await generateRecommendations()
+    } catch (error) {
+      setSubmitError(error.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const goBack = () => {
     setErrors({})
+    setSubmitError('')
     if (fskStep > 0) setFskStep(fskStep - 1)
     else navigate(location.state?.from || '/peminjam')
   }
 
-  const selectedEquipment = demoEquipment.filter(({ id }) => Number(fsk.equipment[id]) > 0)
+  const selectedEquipment = equipmentCatalog.filter(({ id }) => Number(fsk.equipment[id]) > 0)
 
   return (
     <div className="workflow-page">
@@ -52,7 +76,7 @@ function FskPage() {
       <header className="workflow-heading">
         <p className="eyebrow">FORM SPESIFIKASI KEBUTUHAN</p>
         <h1>Ajukan Peminjaman</h1>
-        <p className="page-description">Lengkapi kebutuhan kegiatan untuk melihat pilihan ruangan dan logistik.</p>
+        <p className="page-description">Lengkapi kebutuhan kegiatan untuk mendapatkan rekomendasi ruangan dan logistik dari sistem.</p>
       </header>
 
       <StageProgress activeIndex={fskStep} stages={stages} label="Tahapan pengisian FSK" />
@@ -61,7 +85,7 @@ function FskPage() {
         {fskStep === 0 && (
           <>
             <Card className="workflow-card">
-              <div className="workflow-card__heading"><span className="workflow-card__icon"><ClipboardList size={19} aria-hidden="true" /></span><div><h2>Data peminjam</h2><p>Data demo dapat disesuaikan sebelum melanjutkan.</p></div></div>
+              <div className="workflow-card__heading"><span className="workflow-card__icon"><ClipboardList size={19} aria-hidden="true" /></span><div><h2>Data peminjam</h2><p>Pastikan identitas kontak sudah sesuai sebelum melanjutkan.</p></div></div>
               <div className="workflow-fields">
                 <Input error={errors.borrowerName} label="Nama lengkap" onChange={(event) => updateField('borrowerName', event.target.value)} required value={fsk.borrowerName} />
                 <Input error={errors.organization} label="Organisasi atau unit kegiatan" onChange={(event) => updateField('organization', event.target.value)} required value={fsk.organization} />
@@ -101,20 +125,20 @@ function FskPage() {
           <>
             <Card className="workflow-card">
               <h2>Fasilitas dan barang yang dibutuhkan</h2>
-              <p className="workflow-card__description">Daftar inventaris ini adalah data simulasi, bukan ketersediaan kampus yang terverifikasi.</p>
+              <p className="workflow-card__description">Daftar inventaris diambil langsung dari data Logistik Kampus.</p>
               <div className="equipment-list">
-                {demoEquipment.map(({ id, label, unit }) => {
+                {equipmentCatalog.map(({ id, label, unit, stock }) => {
                   const chosen = Number(fsk.equipment[id]) > 0
                   return (
                     <div className={`equipment-row ${chosen ? 'is-selected' : ''}`} key={id}>
                       <label className="equipment-row__choice">
                         <input checked={chosen} onChange={(event) => updateEquipment(id, event.target.checked ? 1 : '')} type="checkbox" />
-                        <span>{label}</span>
+                        <span>{label}{stock != null ? ` (stok ${stock} ${unit})` : ''}</span>
                       </label>
                       {chosen && id !== 'lainnya' && (
                         <label className="equipment-quantity">
                           <span>Jumlah</span>
-                          <input aria-label={`Jumlah ${label}`} aria-invalid={Boolean(errors[`equipment_${id}`])} max="999" min="1" onChange={(event) => updateEquipment(id, event.target.value)} type="number" value={fsk.equipment[id]} />
+                          <input aria-label={`Jumlah ${label}`} aria-invalid={Boolean(errors[`equipment_${id}`])} max={stock || 999} min="1" onChange={(event) => updateEquipment(id, event.target.value)} type="number" value={fsk.equipment[id]} />
                           <small>{unit}</small>
                           {errors[`equipment_${id}`] && <small className="form-field__message--error">{errors[`equipment_${id}`]}</small>}
                         </label>
@@ -144,12 +168,16 @@ function FskPage() {
           </>
         )}
 
+        {submitError && <p className="logistik-error" role="alert">{submitError}</p>}
+
         <div className="workflow-actions">
-          <Button onClick={goBack} type="button" variant="secondary">Kembali</Button>
-          <Button type="submit">{fskStep === stages.length - 1 ? 'Lihat Rekomendasi' : 'Lanjut'}<ArrowRight size={16} aria-hidden="true" /></Button>
+          <Button disabled={submitting} onClick={goBack} type="button" variant="secondary">Kembali</Button>
+          <Button disabled={submitting} type="submit">
+            {fskStep === stages.length - 1 ? (submitting ? 'Menyusun rekomendasi…' : 'Lihat Rekomendasi') : 'Lanjut'}
+            {!submitting && <ArrowRight size={16} aria-hidden="true" />}
+          </Button>
         </div>
       </form>
-      <p className="demo-disclaimer">Data dan proses pada halaman ini merupakan simulasi frontend.</p>
     </div>
   )
 }

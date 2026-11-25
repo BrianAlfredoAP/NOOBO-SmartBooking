@@ -13,7 +13,15 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
-  app.enableCors({ origin: config.get<string>('APP_URL') ?? true, credentials: true });
+  const rawOrigins = config.get<string>('APP_URL') ?? '';
+  const origins = rawOrigins
+    .split(',')
+    .map((item) => item.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+  app.enableCors({
+    origin: origins.length > 0 ? origins : true,
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

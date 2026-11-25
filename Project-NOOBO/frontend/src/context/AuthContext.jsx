@@ -5,16 +5,23 @@ import { apiMe, apiLogout } from '../api/client.js'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(readDemoSession)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem('noobo-access-token')))
 
   useEffect(() => {
     let active = true
     if (!sessionStorage.getItem('noobo-access-token')) {
-      setLoading(false)
       return () => { active = false }
     }
     apiMe().then((profile) => {
-      if (active) setUser(saveDemoSession({ name: profile.nama, email: profile.email, role: profile.role }))
+      if (active) {
+        setUser(saveDemoSession({
+          id: profile.id,
+          name: profile.nama,
+          email: profile.email,
+          role: profile.role,
+          whatsapp: profile.whatsapp || '',
+        }))
+      }
     }).catch(() => {
       clearDemoSession()
       if (active) setUser(null)

@@ -1,7 +1,7 @@
 import { demoEquipment, demoRooms } from '../data/peminjam-demo.js'
 import { validateTimeRange } from './time-format.js'
 
-export function validateFskStep(step, form) {
+export function validateFskStep(step, form, equipmentList = demoEquipment) {
   const errors = {}
 
   if (step === 0) {
@@ -16,7 +16,10 @@ export function validateFskStep(step, form) {
     if (!form.participants || !Number.isInteger(participants) || participants < 1 || participants > 10000) {
       errors.participants = 'Masukkan jumlah peserta berupa bilangan bulat antara 1 dan 10.000.'
     }
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
     if (!form.date) errors.date = 'Tanggal kegiatan wajib dipilih.'
+    else if (form.date < todayStr) errors.date = 'Tanggal mulai tidak boleh di masa lalu.'
     if (!form.endDate) errors.endDate = 'Tanggal selesai kegiatan wajib dipilih.'
     if (form.date && form.endDate && form.endDate < form.date) errors.endDate = 'Tanggal selesai tidak boleh sebelum tanggal mulai.'
     if (!form.startTime) errors.startTime = 'Waktu mulai wajib diisi.'
@@ -25,7 +28,7 @@ export function validateFskStep(step, form) {
   }
 
   if (step === 2) {
-    demoEquipment.filter(({ id }) => id !== 'lainnya' && form.equipment[id]).forEach(({ id }) => {
+    equipmentList.filter(({ id }) => id !== 'lainnya' && form.equipment[id]).forEach(({ id }) => {
       const quantity = Number(form.equipment[id])
       if (!Number.isInteger(quantity) || quantity < 1) errors[`equipment_${id}`] = 'Jumlah harus berupa bilangan bulat minimal 1.'
     })
