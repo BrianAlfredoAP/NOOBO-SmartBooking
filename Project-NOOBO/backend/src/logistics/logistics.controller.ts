@@ -17,7 +17,9 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import {
   LogisticsDecisionDto,
   LogisticsQueueQueryDto,
+  LogisticsReturnsQueryDto,
 } from './dto/logistics-decision.dto.js';
+import { InspectionDto } from '../loan-requests/dto/loan-lifecycle.dto.js';
 import { LogisticsService } from './logistics.service.js';
 
 @ApiTags('Logistics')
@@ -62,5 +64,37 @@ export class LogisticsController {
   @Roles('LOGISTIK')
   ongoing() {
     return this.service.ongoing();
+  }
+
+  @Get('returns')
+  @Roles('LOGISTIK')
+  returnsQueue(@Query() query: LogisticsReturnsQueryDto) {
+    return this.service.returnsQueue(query);
+  }
+
+  @Get('returns/:id')
+  @Roles('LOGISTIK')
+  returnDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.service.returnDetail(id);
+  }
+
+  @Post('returns/:id/inspection')
+  @Roles('LOGISTIK')
+  recordInspection(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: InspectionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.recordInspection(id, dto, user);
+  }
+
+  @Post('returns/:id/complete')
+  @Roles('LOGISTIK')
+  completeReturn(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: InspectionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.completeReturn(id, dto, user);
   }
 }

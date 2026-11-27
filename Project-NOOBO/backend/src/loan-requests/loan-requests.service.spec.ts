@@ -109,6 +109,48 @@ function setup() {
       outcome: 'CANCELLED',
       request: loanRequest('CANCELLED'),
     }),
+    findMany: vi.fn().mockResolvedValue({
+      rows: [
+        {
+          id_pengajuan: 10,
+          nomor_pengajuan: 'FPP-20260101-ABCD1234',
+          id_fsk: 1,
+          id_paket: 5,
+          status: 'COMPLETED',
+          nama_kegiatan: 'Seminar',
+          tanggal_mulai: '2026-11-10',
+          tanggal_selesai: '2026-11-10',
+          waktu_mulai: '08:00',
+          waktu_selesai: '12:00',
+          jumlah_peserta: 50,
+          tujuan_kegiatan: 'Belajar',
+          borrower_nama: 'Aria',
+          borrower_email: 'mahasiswa@campus.ac.id',
+          nomor_sbp: 'SBP-2026-0001',
+          id_sbpg: 9,
+          status_ketepatan_waktu: 'TEPAT_WAKTU',
+        },
+      ],
+      total: 1,
+    }),
+    findPackageLines: vi.fn().mockResolvedValue({ room: null, logistics: [] }),
+    listHistory: vi.fn().mockResolvedValue([
+      {
+        from_status: 'RETURN_REPORTED',
+        to_status: 'COMPLETED',
+        actor_type: 'LOGISTIK',
+        actor_id: 3,
+        note: 'Lengkap',
+        at: '2026-11-10T13:00:00Z',
+      },
+    ]),
+    listReturnDetails: vi.fn().mockResolvedValue([
+      {
+        id_detail_pengembalian: 1,
+        jumlah_dikembalikan: 1,
+        kondisi_kembali: 'Baik',
+      },
+    ]),
   };
   const emailService = {
     send: vi.fn().mockResolvedValue({ status: 'SENT' }),
@@ -243,5 +285,42 @@ describe('LoanRequestsService', () => {
     await expect(service.cancel(10, {}, user)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('scopes historyList to own requests for PEMINJAM and all requests for LOGISTIK (FR-24, UC-19)', async () => {
+    const { repository, service } = setup();
+
+    const peminjamRes = await service.historyList(
+      { page: 1, limit: 10, status: 'COMPLETED', from: '2026-11-01', to: '2026-11-30' },
+      user,
+    );
+    expect(repository.findMany).toHaveBeenCalledWith({
+      status: 'COMPLETED',
+      idUser: 1,
+      from: '2026-11-01',
+      to: '2026-11-30',
+      q: undefined,
+      page: 1,
+      limit: 10,
+    });
+    expect(peminjamRes.data[0]).toMatchObject({
+      id_pengajuan: 10,
+      status_code: 'COMPLETED',
+      sbpPublished: true,
+      returned: true,
+    });
+    expect((peminjamRes.data[0] as { history: unknown[] }).history).toHaveLength(1);
+
+    const logistikUser = { id: 3, email: 'logistik@campus.ac.id', role: 'LOGISTIK' };
+    await service.historyList({ page: 1, limit: 10, q: 'Seminar' }, logistikUser);
+    expect(repository.findMany).toHaveBeenLastCalledWith({
+      status: undefined,
+      idUser: null,
+      from: undefined,
+      to: undefined,
+      q: 'Seminar',
+      page: 1,
+      limit: 10,
+    });
   });
 });

@@ -18,6 +18,21 @@ export class LoanRequestQueryDto extends PaginationDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @ApiPropertyOptional({ description: 'Filter tanggal mulai kegiatan (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiPropertyOptional({ description: 'Filter tanggal selesai kegiatan (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @ApiPropertyOptional({ description: 'Pencarian nomor pengajuan, kegiatan, atau peminjam' })
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
 
 export class ReturnItemDto {
@@ -88,8 +103,9 @@ export class InspectionFindingDto {
   @Min(1)
   id_ruangan?: number;
 
-  @ApiProperty()
+  @ApiProperty({ enum: ['OK', 'DAMAGED', 'LOST', 'INCOMPLETE'] })
   @IsString()
+  @IsIn(['OK', 'DAMAGED', 'LOST', 'INCOMPLETE', 'Rusak', 'Hilang', 'Tidak Lengkap'])
   @MaxLength(50)
   jenis_temuan: string;
 

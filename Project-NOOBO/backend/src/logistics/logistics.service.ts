@@ -10,9 +10,11 @@ import { toRequestView } from '../loan-requests/loan-requests.mapper.js';
 import { LoanRequestsRepository } from '../loan-requests/loan-requests.repository.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { SbpService } from '../sbp/sbp.service.js';
+import type { InspectionDto } from '../loan-requests/dto/loan-lifecycle.dto.js';
 import type {
   LogisticsDecisionDto,
   LogisticsQueueQueryDto,
+  LogisticsReturnsQueryDto,
 } from './dto/logistics-decision.dto.js';
 import { LogisticsRepository } from './logistics.repository.js';
 
@@ -125,6 +127,113 @@ export class LogisticsService {
     return {
       message: 'Peminjaman berlangsung',
       data: await this.toViews(rows),
+    };
+  }
+
+  async returnsQueue(query: LogisticsReturnsQueryDto) {
+    const rawStatus = query.status ?? 'PENDING_INSPECTION';
+    const status =
+      rawStatus === 'PENDING_INSPECTION'
+        ? PENGAJUAN_STATUS.RETURN_REPORTED
+        : rawStatus;
+    const { rows, total } = await this.requests.findMany({
+      status,
+      idUser: null,
+      page: query.page,
+      limit: query.limit,
+    });
+    return paginated(
+      'Daftar pengembalian',
+      await this.toViews(rows),
+      total,
+      query,
+    );
+  }
+
+  async returnDetail(id: number) {
+    const row = await this.requests.findDetail(id);
+    if (!row) throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+
+    const idPaket = row.id_paket == null ? null : Number(row.id_paket);
+    const pkg = await this.requests.findPackageLines(idPaket);
+    const [history, returnDetails, allocations, inspection] = await Promise.all([
+      this.requests.listHistory(id),
+      this.requests.listReturnDetails(id),
+      this.requests.listAllocations(id),
+      this.requests.findInspection(id),
+    ]);
+
+    return {
+      message: 'Detail pengembalian untuk pemeriksaan',
+      data: {
+        ...toRequestView(row, pkg, { history, return_details: returnDetails }),
+        allocations,
+        inspection,
+      },
+    };
+  }
+
+  async recordInspection(
+    id: number,
+    dto: InspectionDto,
+    user: AuthenticatedUser,
+  ) {
+    const result = await this.requests.recordInspection(id, user.id, {
+      catatan: dto.catatan,
+      temuan: dto.temuan,
+    });
+    if (result.outcome === 'NOT_FOUND') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+    if (result.outcome === 'INVALID_STATUS') {
+      throw new BusinessException(
+        'INSPECTION_NOT_ALLOWED',
+        'Pemeriksaan hanya dapat dilakukan setelah pengembalian dilaporkan',
+        HttpStatus.CONFLICT,
+        [`Status saat ini: ${statusLabel(result.status)}`],
+      );
+    }
+    return { message: 'Hasil pemeriksaan disimpan', data: result.data };
+  }
+
+  async completeReturn(
+    id: number,
+    dto: InspectionDto,
+    user: AuthenticatedUser,
+  ) {
+    const result = await this.requests.inspect(id, user.id, {
+      catatan: dto?.catatan,
+      temuan: dto?.temuan,
+    });
+    if (result.outcome === 'NOT_FOUND') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+    if (result.outcome === 'INVALID_STATUS') {
+      throw new BusinessException(
+        'INSPECTION_NOT_ALLOWED',
+        'Penyelesaian pengembalian hanya dapat dilakukan setelah pengembalian dilaporkan',
+        HttpStatus.CONFLICT,
+        [`Status saat ini: ${statusLabel(result.status)}`],
+      );
+    }
+    if (result.outcome !== 'OK') {
+      throw new NotFoundException(`Pengajuan ${id} tidak ditemukan`);
+    }
+
+    const row = await this.requests.findDetail(id);
+    if (row && row.id_user != null) {
+      await this.notifications.notify({
+        id_user: Number(row.id_user),
+        id_pengajuan: id,
+        judul: 'Pemeriksaan pengembalian selesai',
+        isi: `Pengajuan ${String(row.nama_kegiatan)} telah selesai diperiksa oleh Logistik.`,
+        kategori: 'Pengembalian',
+      });
+    }
+
+    return {
+      message: 'Pemeriksaan selesai dan pengembalian ditutup',
+      data: result.data,
     };
   }
 

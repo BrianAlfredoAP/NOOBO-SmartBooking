@@ -186,6 +186,9 @@ export class LoanRequestsService {
     const { rows, total } = await this.repository.findMany({
       status: query.status,
       idUser,
+      from: query.from,
+      to: query.to,
+      q: query.q,
       page: query.page,
       limit: query.limit,
     });
@@ -196,6 +199,40 @@ export class LoanRequestsService {
       data.push(toRequestView(row, pkg));
     }
     return paginated('Daftar pengajuan', data, total, query);
+  }
+
+  /**
+   * Riwayat transaksi terpadu (FR-24, UC-19):
+   * Peminjam hanya melihat miliknya, Logistik melihat semua beserta jejak status & dokumen.
+   */
+  async historyList(query: LoanRequestQueryDto, user: AuthenticatedUser) {
+    const idUser = user.role === 'PEMINJAM' ? user.id : null;
+    const { rows, total } = await this.repository.findMany({
+      status: query.status,
+      idUser,
+      from: query.from,
+      to: query.to,
+      q: query.q,
+      page: query.page,
+      limit: query.limit,
+    });
+    const data: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      const idPengajuan = Number(row.id_pengajuan);
+      const idPaket = row.id_paket == null ? null : Number(row.id_paket);
+      const [pkg, history, returnDetails] = await Promise.all([
+        this.repository.findPackageLines(idPaket),
+        this.repository.listHistory(idPengajuan),
+        this.repository.listReturnDetails(idPengajuan),
+      ]);
+      data.push(
+        toRequestView(row, pkg, {
+          history,
+          return_details: returnDetails,
+        }),
+      );
+    }
+    return paginated('Riwayat peminjaman', data, total, query);
   }
 
   async detail(id: number, user: AuthenticatedUser) {
@@ -227,6 +264,14 @@ export class LoanRequestsService {
         'Laporan pengembalian hanya dapat dikirim saat kegiatan berlangsung',
         HttpStatus.CONFLICT,
         [`Status saat ini: ${statusLabel(result.status)}`],
+      );
+    }
+    if (result.outcome === 'INVALID_ITEMS') {
+      throw new BusinessException(
+        'SBPG_INVALID_ITEM',
+        'Data item pengembalian tidak valid',
+        HttpStatus.BAD_REQUEST,
+        result.errors,
       );
     }
     return { message: 'Laporan pengembalian dikirim', data: result.data };

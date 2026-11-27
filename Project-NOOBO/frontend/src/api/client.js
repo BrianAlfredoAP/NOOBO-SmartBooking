@@ -193,8 +193,13 @@ export async function apiGetReturnForm(id) {
   return res.data
 }
 
+export async function apiGetSbpg(id) {
+  const res = await apiRequest(`/me/loan-requests/${id}/sbpg`)
+  return res.data
+}
+
 export async function apiSubmitReturn(id, body) {
-  const res = await apiRequest(`/loan-requests/${id}/return`, { method: 'POST', body })
+  const res = await apiRequest(`/me/loan-requests/${id}/sbpg`, { method: 'POST', body })
   return res.data
 }
 
@@ -240,6 +245,11 @@ export async function apiListAllLoanRequests(limit = 100) {
   return res.data || []
 }
 
+export async function apiListHistory(params = 'limit=100') {
+  const res = await apiRequest(`/history?${params}`)
+  return res.data || []
+}
+
 export async function apiGetLogisticsRequestDetail(id) {
   const res = await apiRequest(`/logistics/loan-requests/${id}`)
   return res.data
@@ -255,8 +265,24 @@ export async function apiIssueSbp(id) {
   return res.data
 }
 
+export async function apiListLogisticsReturns(params = 'status=PENDING_INSPECTION&limit=100') {
+  const res = await apiRequest(`/logistics/returns?${params}`)
+  return res.data || []
+}
+
+export async function apiGetLogisticsReturnDetail(id) {
+  const res = await apiRequest(`/logistics/returns/${id}`)
+  return res.data
+}
+
+export async function apiRecordInspection(id, body) {
+  const res = await apiRequest(`/logistics/returns/${id}/inspection`, { method: 'POST', body })
+  return res.data
+}
+
 export async function apiSubmitInspection(id, body) {
-  const res = await apiRequest(`/loan-requests/${id}/inspection`, { method: 'POST', body })
+  await apiRequest(`/logistics/returns/${id}/inspection`, { method: 'POST', body })
+  const res = await apiRequest(`/logistics/returns/${id}/complete`, { method: 'POST', body })
   return res.data
 }
 
