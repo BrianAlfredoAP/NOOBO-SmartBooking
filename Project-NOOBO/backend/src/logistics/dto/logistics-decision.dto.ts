@@ -13,10 +13,27 @@ const QUEUE_STATUSES = [
   'COMPLETED',
 ] as const;
 
+const RETURN_QUEUE_STATUSES = [
+  'PENDING_INSPECTION',
+  'RETURN_REPORTED',
+  'ONGOING',
+  'COMPLETED',
+] as const;
+
 export class LogisticsQueueQueryDto extends PaginationDto {
   @ApiPropertyOptional({ enum: QUEUE_STATUSES, description: 'Filter status pengajuan' })
   @IsOptional()
   @IsIn(QUEUE_STATUSES)
+  status?: string;
+}
+
+export class LogisticsReturnsQueryDto extends PaginationDto {
+  @ApiPropertyOptional({
+    enum: RETURN_QUEUE_STATUSES,
+    description: 'Filter status pengembalian (default PENDING_INSPECTION)',
+  })
+  @IsOptional()
+  @IsIn(RETURN_QUEUE_STATUSES)
   status?: string;
 }
 

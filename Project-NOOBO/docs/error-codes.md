@@ -80,5 +80,13 @@ Semua error dikembalikan dengan format global:
 | `LOGISTICS_REASON_REQUIRED` | 400 | Sprint 5 — alasan wajib saat REVISION/REJECT |
 | `LOGISTICS_NOT_PENDING` | 409 | Sprint 5 — pengajuan tidak lagi menunggu Logistik |
 | `APPROVAL_INCOMPLETE` | 409 | Sprint 5 — SBP diminta sebelum persetujuan Pembina + Logistik lengkap |
-| `DOCUMENT_NOT_AVAILABLE` | 404 | Sprint 5 — SBP belum diterbitkan untuk pengajuan ini |
+| `DOCUMENT_NOT_AVAILABLE` | 404 | Sprint 5/6 — SBP atau SBPG belum diterbitkan/dikirim untuk pengajuan ini |
 | `RETURN_FORM_UNAVAILABLE` | 409 | Sprint 5 — form pengembalian diminta saat kegiatan belum berlangsung |
+
+## Sprint 6 — Pengembalian (SBPG) & Pemeriksaan
+
+| Code | HTTP | Dipakai |
+| --- | --- | --- |
+| `RETURN_NOT_ALLOWED` | 409 | Sprint 6 — SBPG dikirim saat status pengajuan bukan `ONGOING` |
+| `SBPG_INVALID_ITEM` | 400 | Sprint 6 — `jumlah_dikembalikan` melebihi jumlah dipinjam atau alokasi tidak valid; detail di `errors[]` |
+| `INSPECTION_NOT_ALLOWED` | 409 | Sprint 6 — pemeriksaan dilakukan sebelum SBPG dilaporkan (`RETURN_REPORTED`) |

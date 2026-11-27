@@ -179,4 +179,83 @@ describe('Sprint 5 logistics & SBP routes with mocked pool', () => {
     expect(res.body.message).toBe('Daftar pengajuan saya');
     expect(res.body.data).toEqual([]);
   });
+
+  it('validates SBPG submission payload on POST /api/v1/me/loan-requests/:id/sbpg', async () => {
+    const token = await login('mahasiswa@campus.ac.id');
+
+    const invalid = await request(app.getHttpServer())
+      .post('/api/v1/me/loan-requests/7/sbpg')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ items: [] })
+      .expect(400);
+    expect(invalid.body.code).toBe('VALIDATION_ERROR');
+
+    const logistikToken = await login('logistik@campus.ac.id');
+    await request(app.getHttpServer())
+      .post('/api/v1/me/loan-requests/7/sbpg')
+      .set('Authorization', `Bearer ${logistikToken}`)
+      .send({
+        items: [
+          {
+            id_alokasi_logistik: 1,
+            jumlah_dikembalikan: 1,
+            kondisi_kembali: 'Baik',
+          },
+        ],
+      })
+      .expect(403);
+  });
+
+  it('serves and protects Logistics return & inspection routes', async () => {
+    const peminjamToken = await login('mahasiswa@campus.ac.id');
+    await request(app.getHttpServer())
+      .get('/api/v1/logistics/returns')
+      .set('Authorization', `Bearer ${peminjamToken}`)
+      .expect(403);
+
+    const logistikToken = await login('logistik@campus.ac.id');
+    const queue = await request(app.getHttpServer())
+      .get('/api/v1/logistics/returns?status=PENDING_INSPECTION')
+      .set('Authorization', `Bearer ${logistikToken}`)
+      .expect(200);
+    expect(queue.body.message).toBe('Daftar pengembalian');
+    expect(queue.body.data).toEqual([]);
+
+    const badFinding = await request(app.getHttpServer())
+      .post('/api/v1/logistics/returns/7/inspection')
+      .set('Authorization', `Bearer ${logistikToken}`)
+      .send({
+        temuan: [
+          {
+            jenis_temuan: 'UNKNOWN_TYPE',
+            jumlah: 1,
+            deskripsi: 'coba',
+          },
+        ],
+      })
+      .expect(400);
+    expect(badFinding.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('serves GET /api/v1/history for PEMINJAM and LOGISTIK and hides unowned details behind 404', async () => {
+    const peminjamToken = await login('mahasiswa@campus.ac.id');
+    const peminjamHistory = await request(app.getHttpServer())
+      .get('/api/v1/history?status=COMPLETED&from=2026-11-01&to=2026-11-30')
+      .set('Authorization', `Bearer ${peminjamToken}`)
+      .expect(200);
+    expect(peminjamHistory.body.message).toBe('Riwayat peminjaman');
+    expect(peminjamHistory.body.data).toEqual([]);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/history/7')
+      .set('Authorization', `Bearer ${peminjamToken}`)
+      .expect(404);
+
+    const logistikToken = await login('logistik@campus.ac.id');
+    const logistikHistory = await request(app.getHttpServer())
+      .get('/api/v1/history?q=Seminar')
+      .set('Authorization', `Bearer ${logistikToken}`)
+      .expect(200);
+    expect(logistikHistory.body.message).toBe('Riwayat peminjaman');
+  });
 });

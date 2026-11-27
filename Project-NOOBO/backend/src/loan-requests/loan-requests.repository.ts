@@ -9,9 +9,13 @@ import { TERMINAL_REQUEST_STATUSES } from '../common/constants.js';
 import { DATABASE_POOL } from '../database/database.constants.js';
 import type { SqlParam } from '../database/sql.types.js';
 import { AturanPeminjaman } from '../entities/workflow/aturan-peminjaman.entity.js';
+import { DetailPengembalian } from '../entities/workflow/detail-pengembalian.entity.js';
+import { HasilPemeriksaan } from '../entities/workflow/hasil-pemeriksaan.entity.js';
 import { Pembina } from '../entities/workflow/pembina.entity.js';
 import { PENGAJUAN_STATUS } from '../entities/workflow/pengajuan-status.js';
 import { PengajuanPeminjaman } from '../entities/workflow/pengajuan-peminjaman.entity.js';
+import { Sbpg } from '../entities/workflow/sbpg.entity.js';
+import { TemuanPemeriksaan } from '../entities/workflow/temuan-pemeriksaan.entity.js';
 
 const TERMINAL_PLACEHOLDERS = TERMINAL_REQUEST_STATUSES.map(() => '?').join(', ');
 
@@ -65,6 +69,9 @@ export type CancelLoanRequestOutcome =
 export interface LoanRequestFilter {
   status?: string;
   idUser?: number | null;
+  from?: string;
+  to?: string;
+  q?: string;
   page: number;
   limit: number;
 }
@@ -97,7 +104,8 @@ export type LifecycleOutcome =
   | { outcome: 'OK'; data: Record<string, unknown> }
   | { outcome: 'NOT_FOUND' }
   | { outcome: 'NOT_OWNER' }
-  | { outcome: 'INVALID_STATUS'; status: string };
+  | { outcome: 'INVALID_STATUS'; status: string }
+  | { outcome: 'INVALID_ITEMS'; errors: string[] };
 
 const REQUEST_SELECT = `
   p.id_pengajuan, p.id_fsk, p.id_paket, p.id_pembina, p.email_pembina,
@@ -311,6 +319,21 @@ export class LoanRequestsRepository {
       conditions.push('p.status = ?');
       params.push(filter.status);
     }
+    if (filter.from) {
+      conditions.push('sk.tanggal_mulai >= ?');
+      params.push(filter.from);
+    }
+    if (filter.to) {
+      conditions.push('sk.tanggal_selesai <= ?');
+      params.push(filter.to);
+    }
+    if (filter.q?.trim()) {
+      const like = `%${filter.q.trim()}%`;
+      conditions.push(
+        '(p.nomor_pengajuan LIKE ? OR sk.nama_kegiatan LIKE ? OR u.nama LIKE ?)',
+      );
+      params.push(like, like, like);
+    }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [countRows] = await this.pool.execute<RowDataPacket[]>(
@@ -414,8 +437,15 @@ export class LoanRequestsRepository {
 
   async listReturnDetails(idPengajuan: number): Promise<RowDataPacket[]> {
     const [rows] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT d.* FROM detail_pengembalian d
+      `SELECT d.*,
+              l.nama_logistik, l.satuan, al.jumlah_dialokasikan AS jumlah_dipinjam,
+              r.nama_ruangan
+       FROM detail_pengembalian d
        JOIN sbpg s ON s.id_sbpg = d.id_sbpg
+       LEFT JOIN alokasi_logistik al ON al.id_alokasi_logistik = d.id_alokasi_logistik
+       LEFT JOIN logistik l ON l.id_logistik = al.id_logistik
+       LEFT JOIN alokasi_ruangan ar ON ar.id_alokasi_ruangan = d.id_alokasi_ruangan
+       LEFT JOIN ruangan r ON r.id_ruangan = ar.id_ruangan
        WHERE s.id_pengajuan = ?
        ORDER BY d.id_detail_pengembalian ASC`,
       [idPengajuan],
@@ -454,13 +484,86 @@ export class LoanRequestsRepository {
         return { outcome: 'INVALID_STATUS', status };
       }
 
+      const [roomRows] = await connection.execute<RowDataPacket[]>(
+        'SELECT id_alokasi_ruangan FROM alokasi_ruangan WHERE id_pengajuan = ?',
+        [id],
+      );
+      const [itemRows] = await connection.execute<RowDataPacket[]>(
+        'SELECT id_alokasi_logistik, jumlah_dialokasikan FROM alokasi_logistik WHERE id_pengajuan = ?',
+        [id],
+      );
+      const roomIds = new Set(roomRows.map((r) => Number(r.id_alokasi_ruangan)));
+      const itemLimits = new Map(
+        itemRows.map((r) => [
+          Number(r.id_alokasi_logistik),
+          Number(r.jumlah_dialokasikan),
+        ]),
+      );
+
+      const itemErrors: string[] = [];
+      for (const [idx, item] of input.items.entries()) {
+        const hasRoom = item.id_alokasi_ruangan != null;
+        const hasLogistic = item.id_alokasi_logistik != null;
+        if (hasRoom === hasLogistic) {
+          itemErrors.push(
+            `Item #${idx + 1} wajib memilih salah satu id_alokasi_ruangan atau id_alokasi_logistik`,
+          );
+          continue;
+        }
+        const detail = new DetailPengembalian(
+          0,
+          1,
+          item.id_alokasi_ruangan ?? 0,
+          item.id_alokasi_logistik ?? 0,
+          item.jumlah_dikembalikan,
+          item.kondisi_kembali,
+          item.catatan ?? '',
+        );
+        if (!detail.validate() || !detail.addDetail()) {
+          itemErrors.push(`Item #${idx + 1} tidak valid`);
+          continue;
+        }
+        if (hasRoom) {
+          if (roomIds.size > 0 && !roomIds.has(Number(item.id_alokasi_ruangan))) {
+            itemErrors.push(
+              `Alokasi ruangan ${item.id_alokasi_ruangan} bukan milik pengajuan ini`,
+            );
+          } else if (item.jumlah_dikembalikan < 0 || item.jumlah_dikembalikan > 1) {
+            itemErrors.push(
+              `Jumlah kembali ruangan harus antara 0 dan 1 (diterima: ${item.jumlah_dikembalikan})`,
+            );
+          }
+        } else if (hasLogistic) {
+          const borrowed = itemLimits.get(Number(item.id_alokasi_logistik));
+          if (itemLimits.size > 0 && borrowed === undefined) {
+            itemErrors.push(
+              `Alokasi logistik ${item.id_alokasi_logistik} bukan milik pengajuan ini`,
+            );
+          } else if (
+            borrowed !== undefined &&
+            (item.jumlah_dikembalikan < 0 || item.jumlah_dikembalikan > borrowed)
+          ) {
+            itemErrors.push(
+              `Jumlah dikembalikan (${item.jumlah_dikembalikan}) melebihi jumlah dipinjam (${borrowed})`,
+            );
+          }
+        }
+      }
+
+      if (itemErrors.length > 0) {
+        await connection.rollback();
+        return { outcome: 'INVALID_ITEMS', errors: itemErrors };
+      }
+
       const batas = new Date(
         combineDateTime(row.tanggal_selesai, row.waktu_selesai).getTime() +
           60 * 60 * 1000,
       );
-      const waktuKirim = new Date();
-      const ketepatan =
-        waktuKirim.getTime() <= batas.getTime() ? 'TEPAT_WAKTU' : 'TERLAMBAT';
+      const sbpg = new Sbpg(0, id, batas, new Date(), 'TEPAT_WAKTU', input.catatan ?? '');
+      if (input.foto_kerusakan) sbpg.uploadFoto(input.foto_kerusakan);
+      sbpg.generate();
+      const waktuKirim = sbpg.waktu_kirim;
+      const ketepatan = sbpg.status_ketepatan_waktu;
       const [result] = await connection.execute<ResultSetHeader>(
         `INSERT INTO sbpg
            (id_pengajuan, batas_waktu_kirim, waktu_kirim, status_ketepatan_waktu,
@@ -512,6 +615,7 @@ export class LoanRequestsRepository {
           id_sbpg: idSbpg,
           status: 'RETURN_REPORTED',
           status_ketepatan_waktu: ketepatan,
+          is_late: ketepatan === 'TERLAMBAT',
           batas_waktu_kirim: batas,
           waktu_kirim: waktuKirim,
         },
@@ -524,7 +628,32 @@ export class LoanRequestsRepository {
     }
   }
 
-  async inspect(
+  async findInspection(idPengajuan: number): Promise<{
+    hasil: RowDataPacket | null;
+    temuan: RowDataPacket[];
+  }> {
+    const [hasilRows] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT * FROM hasil_pemeriksaan
+       WHERE id_pengajuan = ?
+       ORDER BY id_hasil_pemeriksaan DESC
+       LIMIT 1`,
+      [idPengajuan],
+    );
+    const hasil = hasilRows[0] ?? null;
+    if (!hasil) return { hasil: null, temuan: [] };
+    const [temuan] = await this.pool.execute<RowDataPacket[]>(
+      `SELECT t.*, l.nama_logistik, r.nama_ruangan
+       FROM temuan_pemeriksaan t
+       LEFT JOIN logistik l ON l.id_logistik = t.id_logistik
+       LEFT JOIN ruangan r ON r.id_ruangan = t.id_ruangan
+       WHERE t.id_hasil_pemeriksaan = ?
+       ORDER BY t.id_temuan ASC`,
+      [Number(hasil.id_hasil_pemeriksaan)],
+    );
+    return { hasil, temuan };
+  }
+
+  async recordInspection(
     id: number,
     idUserLogistik: number,
     input: InspectionInput,
@@ -555,28 +684,267 @@ export class LoanRequestsRepository {
         return { outcome: 'INVALID_STATUS', status };
       }
       const idSbpg = Number(sbpgRows[0].id_sbpg);
-      const [hasil] = await connection.execute<ResultSetHeader>(
-        `INSERT INTO hasil_pemeriksaan
-           (id_pengajuan, id_sbpg, id_user_pemeriksa, status_pemeriksaan, catatan)
-         VALUES (?, ?, ?, 'COMPLETED', ?)`,
-        [id, idSbpg, idUserLogistik, input.catatan ?? null],
+
+      const hasilEntity = new HasilPemeriksaan(
+        0,
+        id,
+        idSbpg,
+        idUserLogistik,
+        new Date(),
+        'IN_PROGRESS',
+        input.catatan ?? '',
       );
+      hasilEntity.inspect();
+
+      const [existingRows] = await connection.execute<RowDataPacket[]>(
+        `SELECT id_hasil_pemeriksaan FROM hasil_pemeriksaan
+         WHERE id_pengajuan = ?
+         ORDER BY id_hasil_pemeriksaan DESC
+         LIMIT 1`,
+        [id],
+      );
+      let idHasil: number;
+      if (existingRows[0]) {
+        idHasil = Number(existingRows[0].id_hasil_pemeriksaan);
+        await connection.execute(
+          `UPDATE hasil_pemeriksaan
+           SET id_user_pemeriksa = ?, status_pemeriksaan = ?, catatan = ?, waktu_pemeriksaan = NOW()
+           WHERE id_hasil_pemeriksaan = ?`,
+          [
+            idUserLogistik,
+            hasilEntity.status_pemeriksaan,
+            input.catatan ?? null,
+            idHasil,
+          ],
+        );
+        await connection.execute(
+          'DELETE FROM temuan_pemeriksaan WHERE id_hasil_pemeriksaan = ?',
+          [idHasil],
+        );
+      } else {
+        const [inserted] = await connection.execute<ResultSetHeader>(
+          `INSERT INTO hasil_pemeriksaan
+             (id_pengajuan, id_sbpg, id_user_pemeriksa, status_pemeriksaan, catatan)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            id,
+            idSbpg,
+            idUserLogistik,
+            hasilEntity.status_pemeriksaan,
+            input.catatan ?? null,
+          ],
+        );
+        idHasil = inserted.insertId;
+      }
+
       for (const temuan of input.temuan ?? []) {
+        const temuanEntity = new TemuanPemeriksaan(
+          0,
+          idHasil,
+          temuan.id_logistik ?? 0,
+          temuan.id_ruangan ?? 0,
+          temuan.jenis_temuan,
+          temuan.jumlah,
+          temuan.deskripsi,
+          temuan.foto_bukti ?? '',
+        );
+        if (!temuanEntity.addTemuan()) continue;
         await connection.execute(
           `INSERT INTO temuan_pemeriksaan
              (id_hasil_pemeriksaan, id_logistik, id_ruangan, jenis_temuan, jumlah, deskripsi, foto_bukti)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
-            hasil.insertId,
+            idHasil,
             temuan.id_logistik ?? null,
             temuan.id_ruangan ?? null,
-            temuan.jenis_temuan,
-            temuan.jumlah,
-            temuan.deskripsi,
+            temuanEntity.jenis_temuan,
+            temuanEntity.jumlah,
+            temuanEntity.deskripsi,
             temuan.foto_bukti ?? null,
           ],
         );
       }
+
+      await connection.commit();
+      return {
+        outcome: 'OK',
+        data: {
+          id_hasil_pemeriksaan: idHasil,
+          status_pemeriksaan: hasilEntity.status_pemeriksaan,
+          jumlah_temuan: (input.temuan ?? []).length,
+        },
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async inspect(
+    id: number,
+    idUserLogistik: number,
+    input: InspectionInput = {},
+  ): Promise<LifecycleOutcome> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.execute<RowDataPacket[]>(
+        'SELECT * FROM pengajuan_peminjaman WHERE id_pengajuan = ? LIMIT 1 FOR UPDATE',
+        [id],
+      );
+      const row = rows[0];
+      if (!row) {
+        await connection.rollback();
+        return { outcome: 'NOT_FOUND' };
+      }
+      const status = String(row.status);
+      if (status !== 'RETURN_REPORTED') {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+      const [sbpgRows] = await connection.execute<RowDataPacket[]>(
+        'SELECT id_sbpg FROM sbpg WHERE id_pengajuan = ? LIMIT 1',
+        [id],
+      );
+      if (!sbpgRows[0]) {
+        await connection.rollback();
+        return { outcome: 'INVALID_STATUS', status };
+      }
+      const idSbpg = Number(sbpgRows[0].id_sbpg);
+
+      const hasilEntity = new HasilPemeriksaan(
+        0,
+        id,
+        idSbpg,
+        idUserLogistik,
+        new Date(),
+        'IN_PROGRESS',
+        input.catatan ?? '',
+      );
+      hasilEntity.complete();
+
+      const [existingRows] = await connection.execute<RowDataPacket[]>(
+        `SELECT id_hasil_pemeriksaan FROM hasil_pemeriksaan
+         WHERE id_pengajuan = ?
+         ORDER BY id_hasil_pemeriksaan DESC
+         LIMIT 1`,
+        [id],
+      );
+
+      let idHasil: number;
+      let findingsToApply: NonNullable<InspectionInput['temuan']> =
+        input.temuan ?? [];
+
+      if (existingRows[0]) {
+        idHasil = Number(existingRows[0].id_hasil_pemeriksaan);
+        await connection.execute(
+          `UPDATE hasil_pemeriksaan
+           SET id_user_pemeriksa = ?, status_pemeriksaan = ?, catatan = COALESCE(?, catatan), waktu_pemeriksaan = NOW()
+           WHERE id_hasil_pemeriksaan = ?`,
+          [
+            idUserLogistik,
+            hasilEntity.status_pemeriksaan,
+            input.catatan ?? null,
+            idHasil,
+          ],
+        );
+        if (input.temuan !== undefined) {
+          await connection.execute(
+            'DELETE FROM temuan_pemeriksaan WHERE id_hasil_pemeriksaan = ?',
+            [idHasil],
+          );
+          for (const temuan of input.temuan) {
+            await connection.execute(
+              `INSERT INTO temuan_pemeriksaan
+                 (id_hasil_pemeriksaan, id_logistik, id_ruangan, jenis_temuan, jumlah, deskripsi, foto_bukti)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                idHasil,
+                temuan.id_logistik ?? null,
+                temuan.id_ruangan ?? null,
+                temuan.jenis_temuan,
+                temuan.jumlah,
+                temuan.deskripsi,
+                temuan.foto_bukti ?? null,
+              ],
+            );
+          }
+        } else {
+          const [storedTemuan] = await connection.execute<RowDataPacket[]>(
+            'SELECT * FROM temuan_pemeriksaan WHERE id_hasil_pemeriksaan = ?',
+            [idHasil],
+          );
+          findingsToApply = storedTemuan.map((t) => ({
+            id_logistik: t.id_logistik != null ? Number(t.id_logistik) : undefined,
+            id_ruangan: t.id_ruangan != null ? Number(t.id_ruangan) : undefined,
+            jenis_temuan: String(t.jenis_temuan),
+            jumlah: Number(t.jumlah),
+            deskripsi: String(t.deskripsi ?? ''),
+            foto_bukti: t.foto_bukti != null ? String(t.foto_bukti) : undefined,
+          }));
+        }
+      } else {
+        const [hasil] = await connection.execute<ResultSetHeader>(
+          `INSERT INTO hasil_pemeriksaan
+             (id_pengajuan, id_sbpg, id_user_pemeriksa, status_pemeriksaan, catatan)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            id,
+            idSbpg,
+            idUserLogistik,
+            hasilEntity.status_pemeriksaan,
+            input.catatan ?? null,
+          ],
+        );
+        idHasil = hasil.insertId;
+        for (const temuan of findingsToApply) {
+          await connection.execute(
+            `INSERT INTO temuan_pemeriksaan
+               (id_hasil_pemeriksaan, id_logistik, id_ruangan, jenis_temuan, jumlah, deskripsi, foto_bukti)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              idHasil,
+              temuan.id_logistik ?? null,
+              temuan.id_ruangan ?? null,
+              temuan.jenis_temuan,
+              temuan.jumlah,
+              temuan.deskripsi,
+              temuan.foto_bukti ?? null,
+            ],
+          );
+        }
+      }
+
+      let lostDeductions = 0;
+      let damagedUpdates = 0;
+      for (const temuan of findingsToApply) {
+        const jenis = temuan.jenis_temuan.toUpperCase();
+        if ((jenis === 'LOST' || jenis === 'HILANG') && temuan.id_logistik) {
+          await connection.execute(
+            'UPDATE logistik SET stok_total = GREATEST(0, stok_total - ?) WHERE id_logistik = ?',
+            [temuan.jumlah, temuan.id_logistik],
+          );
+          lostDeductions += temuan.jumlah;
+        } else if (jenis === 'DAMAGED' || jenis === 'RUSAK') {
+          if (temuan.id_logistik) {
+            await connection.execute(
+              "UPDATE logistik SET kondisi_fasilitas = 'Rusak' WHERE id_logistik = ?",
+              [temuan.id_logistik],
+            );
+            damagedUpdates += 1;
+          }
+          if (temuan.id_ruangan) {
+            await connection.execute(
+              "UPDATE ruangan SET kondisi_fasilitas = 'Rusak' WHERE id_ruangan = ?",
+              [temuan.id_ruangan],
+            );
+            damagedUpdates += 1;
+          }
+        }
+      }
+
       await connection.execute(
         `UPDATE alokasi_ruangan SET status_alokasi = 'RELEASED' WHERE id_pengajuan = ?`,
         [id],
@@ -602,9 +970,11 @@ export class LoanRequestsRepository {
       return {
         outcome: 'OK',
         data: {
-          id_hasil_pemeriksaan: hasil.insertId,
+          id_hasil_pemeriksaan: idHasil,
           status: 'COMPLETED',
-          jumlah_temuan: (input.temuan ?? []).length,
+          jumlah_temuan: findingsToApply.length,
+          lost_stock_deducted: lostDeductions,
+          damaged_items_flagged: damagedUpdates,
         },
       };
     } catch (error) {

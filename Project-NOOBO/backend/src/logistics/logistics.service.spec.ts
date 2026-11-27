@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { LoanRequestsRepository } from '../loan-requests/loan-requests.repository.js';
 import { LogisticsService } from './logistics.service.js';
 
 const logistikUser = { id: 3, email: 'logistik@campus.ac.id', role: 'LOGISTIK' };
@@ -28,6 +29,10 @@ function setup() {
     findPackageLines: vi.fn().mockResolvedValue({ room: null, logistics: [] }),
     listHistory: vi.fn().mockResolvedValue([]),
     listReturnDetails: vi.fn().mockResolvedValue([]),
+    listAllocations: vi.fn().mockResolvedValue({ rooms: [], items: [] }),
+    findInspection: vi.fn().mockResolvedValue({ hasil: null, temuan: [] }),
+    recordInspection: vi.fn(),
+    inspect: vi.fn(),
     listOngoing: vi.fn().mockResolvedValue([]),
   };
   const notifications = { notify: vi.fn().mockResolvedValue(1) };
@@ -146,5 +151,114 @@ describe('LogisticsService', () => {
     await expect(
       service.decide(7, { keputusan: 'APPROVE' }, logistikUser),
     ).rejects.toMatchObject({ code: 'LOGISTICS_NOT_PENDING' });
+  });
+
+  it('maps PENDING_INSPECTION filter to RETURN_REPORTED in returnsQueue', async () => {
+    const { requests, service } = setup();
+
+    await service.returnsQueue({
+      status: 'PENDING_INSPECTION',
+      page: 1,
+      limit: 10,
+    });
+
+    expect(requests.findMany).toHaveBeenCalledWith({
+      status: 'RETURN_REPORTED',
+      idUser: null,
+      page: 1,
+      limit: 10,
+    });
+  });
+
+  it('deducts LOST stock, flags DAMAGED condition, and releases allocations on completeReturn', async () => {
+    const executedSql: Array<{ sql: string; params: unknown[] }> = [];
+    const execute = vi.fn(async (sql: string, params: unknown[] = []) => {
+      executedSql.push({ sql, params });
+      if (sql.includes('FROM pengajuan_peminjaman WHERE id_pengajuan = ? LIMIT 1 FOR UPDATE')) {
+        return [[{ id_pengajuan: 7, status: 'RETURN_REPORTED' }], []];
+      }
+      if (sql.includes('SELECT id_sbpg FROM sbpg')) {
+        return [[{ id_sbpg: 12 }], []];
+      }
+      if (sql.includes('SELECT id_hasil_pemeriksaan FROM hasil_pemeriksaan')) {
+        return [[], []];
+      }
+      if (sql.includes('INSERT INTO hasil_pemeriksaan')) {
+        return [{ insertId: 99 }, []];
+      }
+      return [{ affectedRows: 1 }, []];
+    });
+
+    const connection = {
+      execute,
+      beginTransaction: vi.fn().mockResolvedValue(undefined),
+      commit: vi.fn().mockResolvedValue(undefined),
+      rollback: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn(),
+    };
+    const realRequestsRepo = new LoanRequestsRepository({
+      execute,
+      getConnection: vi.fn().mockResolvedValue(connection),
+    } as never);
+    vi.spyOn(realRequestsRepo, 'findDetail').mockResolvedValue({
+      id_pengajuan: 7,
+      id_user: 1,
+      nama_kegiatan: 'Seminar AI',
+    } as never);
+
+    const { repository, notifications, emailService } = setup();
+    const service = new LogisticsService(
+      repository as never,
+      realRequestsRepo,
+      notifications as never,
+      emailService as never,
+      {} as never,
+    );
+
+    const res = await service.completeReturn(
+      7,
+      {
+        catatan: '1 mic hilang, 1 proyektor rusak',
+        temuan: [
+          {
+            id_logistik: 4,
+            jenis_temuan: 'LOST',
+            jumlah: 1,
+            deskripsi: 'Mic wireless hilang',
+          },
+          {
+            id_logistik: 2,
+            jenis_temuan: 'DAMAGED',
+            jumlah: 1,
+            deskripsi: 'Lensa proyektor retak',
+          },
+        ],
+      },
+      logistikUser,
+    );
+
+    expect(res.data).toMatchObject({
+      id_hasil_pemeriksaan: 99,
+      status: 'COMPLETED',
+      jumlah_temuan: 2,
+      lost_stock_deducted: 1,
+      damaged_items_flagged: 1,
+    });
+    expect(
+      executedSql.some(
+        (call) =>
+          call.sql.includes('stok_total = GREATEST(0, stok_total - ?)') &&
+          call.params[0] === 1 &&
+          call.params[1] === 4,
+      ),
+    ).toBe(true);
+    expect(
+      executedSql.some(
+        (call) =>
+          call.sql.includes("UPDATE logistik SET kondisi_fasilitas = 'Rusak'") &&
+          call.params[0] === 2,
+      ),
+    ).toBe(true);
+    expect(notifications.notify).toHaveBeenCalledOnce();
   });
 });
