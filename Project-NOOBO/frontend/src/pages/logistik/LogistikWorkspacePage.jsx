@@ -37,7 +37,7 @@ import Select from '../../components/ui/Select.jsx'
 import StageProgress from '../../components/common/StageProgress.jsx'
 import { formatTimeRange } from '../../utils/time-format.js'
 import { isAwaitingLogistics } from '../../utils/logistik-workflow.js'
-import { apiGetLogisticsRequestDetail } from '../../api/client.js'
+import { apiGetLogisticsRequestDetail, apiGetLogisticsReturnDetail } from '../../api/client.js'
 
 const roomStages = ['Informasi', 'Fasilitas', 'Konfirmasi']
 const inventoryStages = ['Informasi', 'Stok & kondisi', 'Konfirmasi']
@@ -830,7 +830,7 @@ function ReturnDocument({ ctx }) {
   const [detail, setDetail] = useState(null)
 
   useEffect(() => {
-    apiGetLogisticsRequestDetail(id).then(setDetail).catch(() => {})
+    apiGetLogisticsReturnDetail(id).then(setDetail).catch(() => {})
   }, [id])
 
   const item = detail || ctx.requests.find((entry) => String(entry.id) === String(id))
@@ -839,7 +839,7 @@ function ReturnDocument({ ctx }) {
   }
 
   const details = item.return_details || []
-  const summaryLines = details.map((d) => `Jumlah kembali: ${d.jumlah_dikembalikan}, kondisi: ${d.kondisi_kembali}${d.catatan ? ` (${d.catatan})` : ''}`).join('; ')
+  const summaryLines = details.map((d) => `${d.nama_ruangan ? `Ruangan ${d.nama_ruangan}` : d.nama_logistik || 'Item'}: kembali ${d.jumlah_dikembalikan} (${d.kondisi_kembali})${d.catatan ? ` - ${d.catatan}` : ''}`).join('; ')
   const documentText = [
     `SBPG · ${item.nomor_pengajuan || item.id}`,
     `SBP terkait: ${item.sbp?.nomor_sbp || '-'}`,
@@ -887,6 +887,7 @@ function ReturnList({ ctx, detail = false }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [findingType, setFindingType] = useState('')
+  const [findingTarget, setFindingTarget] = useState('')
   const [findingQty, setFindingQty] = useState('1')
   const [findingDesc, setFindingDesc] = useState('')
   const [feedback, setFeedback] = useState('')
@@ -899,7 +900,7 @@ function ReturnList({ ctx, detail = false }) {
     if (!detail || !id) return
     setLoading(true)
     try {
-      setDetailRecord(await apiGetLogisticsRequestDetail(id))
+      setDetailRecord(await apiGetLogisticsReturnDetail(id))
     } catch {
       setDetailRecord(null)
     } finally {
@@ -910,7 +911,7 @@ function ReturnList({ ctx, detail = false }) {
   useEffect(() => {
     if (!detail || !id) return
     let active = true
-    apiGetLogisticsRequestDetail(id)
+    apiGetLogisticsReturnDetail(id)
       .then((data) => {
         if (active) setDetailRecord(data)
       })
@@ -931,8 +932,15 @@ function ReturnList({ ctx, detail = false }) {
     setSubmitting(true)
     setFeedback('')
     try {
+      const targetParts = findingTarget ? findingTarget.split(':') : []
+      const targetPayload = targetParts[0] === 'log' && targetParts[1]
+        ? { id_logistik: Number(targetParts[1]) }
+        : targetParts[0] === 'room' && targetParts[1]
+          ? { id_ruangan: Number(targetParts[1]) }
+          : {}
       const temuan = findingType && findingDesc.trim()
         ? [{
+            ...targetPayload,
             jenis_temuan: findingType,
             jumlah: Math.max(1, Number(findingQty) || 1),
             deskripsi: findingDesc.trim(),
@@ -959,6 +967,18 @@ function ReturnList({ ctx, detail = false }) {
     const hasReport = Boolean(item.sbpg)
     const isCompleted = item.status_code === 'COMPLETED'
     const returnDetails = item.return_details || []
+    const targetOptions = [
+      ...(item.allocations?.items || item.logistics || []).map((l) => ({
+        value: `log:${l.id_logistik ?? l.id}`,
+        label: `${l.nama_logistik ?? l.label} (${l.jumlah_dialokasikan ?? l.quantity ?? 1} ${l.satuan ?? l.unit ?? 'unit'})`,
+      })),
+      ...(item.allocations?.rooms || (item.room ? [{ id_ruangan: item.room.id, nama_ruangan: item.room.name }] : [])).map((r) => ({
+        value: `room:${r.id_ruangan}`,
+        label: `Ruangan: ${r.nama_ruangan}`,
+      })),
+    ]
+    const inspectionHasil = item.inspection?.hasil
+    const inspectionTemuan = item.inspection?.temuan || []
 
     return (
       <div className="logistik-page">
@@ -983,12 +1003,20 @@ function ReturnList({ ctx, detail = false }) {
         ) : (
           <>
             <Card>
-              <h2>Detail laporan SBPG</h2>
+              <h2>Detail laporan SBPG (SBP vs Kembali)</h2>
               {returnDetails.length ? (
                 <div className="logistik-return-lines">
                   {returnDetails.map((line, index) => (
                     <div className="logistik-return-line" key={line.id_detail_pengembalian || index}>
-                      <strong>{line.id_alokasi_ruangan ? 'Ruangan' : `Item Alokasi #${line.id_alokasi_logistik}`}</strong>
+                      <strong>
+                        {line.nama_ruangan
+                          ? `Ruangan: ${line.nama_ruangan}`
+                          : line.nama_logistik
+                            ? `${line.nama_logistik} (dipinjam: ${line.jumlah_dipinjam ?? '-'} ${line.satuan || 'unit'})`
+                            : line.id_alokasi_ruangan
+                              ? 'Ruangan'
+                              : `Item Alokasi #${line.id_alokasi_logistik}`}
+                      </strong>
                       <small>Dilaporkan kembali: {line.jumlah_dikembalikan} · Kondisi: {line.kondisi_kembali}</small>
                       {line.catatan && <small>Catatan: {line.catatan}</small>}
                     </div>
@@ -999,6 +1027,18 @@ function ReturnList({ ctx, detail = false }) {
               )}
               <InfoRows rows={[['Catatan peminjam', item.sbpg?.catatan_peminjam || 'Tidak ada catatan']]} />
             </Card>
+            {inspectionHasil && (
+              <Card>
+                <h2>Hasil Pemeriksaan Logistik</h2>
+                <InfoRows rows={[
+                  ['Status pemeriksaan', inspectionHasil.status_pemeriksaan],
+                  ['Catatan pemeriksa', inspectionHasil.catatan || 'Tidak ada catatan'],
+                  ['Temuan', inspectionTemuan.length
+                    ? inspectionTemuan.map((t) => `${t.nama_logistik || t.nama_ruangan || 'Fasilitas'}: ${t.jenis_temuan} (${t.jumlah}) — ${t.deskripsi}`).join('; ')
+                    : 'Tidak ada temuan kerusakan/kehilangan'],
+                ]} />
+              </Card>
+            )}
             <Button onClick={() => navigate(`/logistik/dokumen/sbpg/${item.id}`, { state: { from: location.pathname } })} variant="secondary">
               <FileText size={16} />Lihat SBPG
             </Button>
@@ -1013,7 +1053,7 @@ function ReturnList({ ctx, detail = false }) {
                   <label className="form-field">
                     <span className="form-field__label">Temuan kerusakan/kehilangan (opsional)</span>
                     <select className="form-control" onChange={(e) => setFindingType(e.target.value)} value={findingType}>
-                      <option value="">Tidak ada temuan</option>
+                      <option value="">Tidak ada temuan (Semua OK)</option>
                       <option value="DAMAGED">Rusak (DAMAGED)</option>
                       <option value="LOST">Hilang (LOST)</option>
                       <option value="INCOMPLETE">Tidak Lengkap (INCOMPLETE)</option>
@@ -1021,6 +1061,13 @@ function ReturnList({ ctx, detail = false }) {
                   </label>
                   {findingType && (
                     <>
+                      <label className="form-field">
+                        <span className="form-field__label">Fasilitas terkait temuan</span>
+                        <select className="form-control" onChange={(e) => setFindingTarget(e.target.value)} value={findingTarget}>
+                          <option value="">Pilih barang atau ruangan</option>
+                          {targetOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </label>
                       <Input label="Jumlah item temuan" min="1" onChange={(e) => setFindingQty(e.target.value)} type="number" value={findingQty} />
                       <label className="form-field">
                         <span className="form-field__label">Deskripsi temuan</span>

@@ -416,7 +416,7 @@ export class LoanRequestsRepository {
     items: RowDataPacket[];
   }> {
     const [rooms] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT a.id_alokasi_ruangan, r.nama_ruangan, r.kode_ruangan
+      `SELECT a.id_alokasi_ruangan, a.id_ruangan, r.nama_ruangan, r.kode_ruangan
        FROM alokasi_ruangan a
        JOIN ruangan r ON r.id_ruangan = a.id_ruangan
        WHERE a.id_pengajuan = ?
@@ -424,7 +424,7 @@ export class LoanRequestsRepository {
       [idPengajuan],
     );
     const [items] = await this.pool.execute<RowDataPacket[]>(
-      `SELECT a.id_alokasi_logistik, l.nama_logistik, l.satuan,
+      `SELECT a.id_alokasi_logistik, a.id_logistik, l.nama_logistik, l.satuan,
               a.jumlah_dialokasikan
        FROM alokasi_logistik a
        JOIN logistik l ON l.id_logistik = a.id_logistik
@@ -438,8 +438,8 @@ export class LoanRequestsRepository {
   async listReturnDetails(idPengajuan: number): Promise<RowDataPacket[]> {
     const [rows] = await this.pool.execute<RowDataPacket[]>(
       `SELECT d.*,
-              l.nama_logistik, l.satuan, al.jumlah_dialokasikan AS jumlah_dipinjam,
-              r.nama_ruangan
+              al.id_logistik, l.nama_logistik, l.satuan, al.jumlah_dialokasikan AS jumlah_dipinjam,
+              ar.id_ruangan, r.nama_ruangan
        FROM detail_pengembalian d
        JOIN sbpg s ON s.id_sbpg = d.id_sbpg
        LEFT JOIN alokasi_logistik al ON al.id_alokasi_logistik = d.id_alokasi_logistik

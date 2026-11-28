@@ -141,7 +141,13 @@ function LogistikLayout() {
 
   const submitInspection = async (id, body) => {
     const result = await apiSubmitInspection(id, body)
-    await refreshRequests()
+    const [, roomList, inventoryList] = await Promise.all([
+      refreshRequests(),
+      apiListRooms('limit=100'),
+      apiListLogisticItems('limit=100'),
+    ])
+    setRooms(roomList)
+    setInventory(inventoryList)
     return result
   }
 

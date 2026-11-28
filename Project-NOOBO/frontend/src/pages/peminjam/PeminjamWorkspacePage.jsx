@@ -6,7 +6,7 @@ import Card from '../../components/ui/Card.jsx'
 import Modal from '../../components/ui/Modal.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import { formatTimeRange } from '../../utils/time-format.js'
-import { apiDownloadSbpPdf, apiGetMyLoanRequest, apiGetReturnForm } from '../../api/client.js'
+import { apiDownloadSbpPdf, apiGetMyLoanRequest, apiGetReturnForm, apiListHistory } from '../../api/client.js'
 
 const titleMap = { pengajuan: 'Peminjaman Saya', riwayat: 'Riwayat Peminjaman', profil: 'Profil Peminjam', notifikasi: 'Notifikasi' }
 const CANCELLABLE_CODES = new Set(['SUBMITTED', 'WAITING_PEMBINA', 'WAITING_LOGISTIK', 'REVISION_LOGISTIK'])
@@ -99,7 +99,7 @@ function SbpgForm({ record, submitReturnReport, onSubmitted }) {
           ['Waktu kirim', sbpg?.waktu_kirim ? new Date(sbpg.waktu_kirim).toLocaleString('id-ID', { hourCycle: 'h23', timeZone: 'Asia/Jakarta' }) : '-'],
           ['Ketepatan waktu', sbpg?.status_ketepatan_waktu === 'TERLAMBAT' ? 'Terlambat' : sbpg?.status_ketepatan_waktu === 'TEPAT_WAKTU' ? 'Tepat waktu' : '-'],
           ['Catatan peminjam', sbpg?.catatan_peminjam || 'Tidak ada catatan'],
-          ['Item dilaporkan', details.length ? details.map((d) => `${d.jumlah_dikembalikan} unit (${d.kondisi_kembali})`).join(', ') : '-'],
+          ['Item dilaporkan', details.length ? details.map((d) => `${d.nama_ruangan ? `Ruangan ${d.nama_ruangan}` : d.nama_logistik || 'Item'}: ${d.jumlah_dikembalikan} (${d.kondisi_kembali})`).join(', ') : '-'],
         ]} />
       </Card>
     )
@@ -197,6 +197,7 @@ export default function PeminjamWorkspacePage({ section }) {
   const [draftEnd, setDraftEnd] = useState('')
   const [detailRecord, setDetailRecord] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [historyRecords, setHistoryRecords] = useState(null)
   const [actionError, setActionError] = useState('')
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelNote, setCancelNote] = useState('')
@@ -257,7 +258,24 @@ export default function PeminjamWorkspacePage({ section }) {
     return item.status_code === 'COMPLETED'
   }
 
-  const filtered = submittedApplications.filter((x) => (
+  useEffect(() => {
+    if (section !== 'riwayat') return
+    let active = true
+    apiListHistory('limit=100')
+      .then((items) => {
+        if (active) setHistoryRecords(items)
+      })
+      .catch(() => {
+        if (active) setHistoryRecords(null)
+      })
+    return () => { active = false }
+  }, [section])
+
+  const sourceApplications = section === 'riwayat' && Array.isArray(historyRecords)
+    ? historyRecords
+    : submittedApplications
+
+  const filtered = sourceApplications.filter((x) => (
     statusMatch(x)
     && (!dateStart || (x.event?.date || '') >= dateStart)
     && (!dateEnd || (x.event?.date || '') <= dateEnd)

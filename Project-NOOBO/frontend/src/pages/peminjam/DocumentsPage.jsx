@@ -4,15 +4,21 @@ import { Link, useLocation, useOutletContext } from 'react-router'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
-import { apiDownloadSbpPdf } from '../../api/client.js'
+import { apiDownloadSbpPdf, apiGetSbpg } from '../../api/client.js'
 
-function downloadSbpgSummary(record) {
+function downloadSbpgSummary(record, sbpgDetail = null) {
+  const sbpg = sbpgDetail || record.sbpg || {}
+  const items = sbpgDetail?.items || record.return_details || []
+  const itemLines = items.length
+    ? items.map((d) => `- ${d.nama_ruangan ? `Ruangan ${d.nama_ruangan}` : d.nama_logistik || 'Item'}: kembali ${d.jumlah_dikembalikan} (${d.kondisi_kembali})`).join('\n')
+    : '-'
   const body = [
     `SBPG · ${record.nomor_pengajuan || record.id}`,
-    `Kegiatan: ${record.event?.name || '-'}`,
+    `Kegiatan: ${record.event?.name || sbpgDetail?.nama_kegiatan || '-'}`,
     `Status: ${record.status}`,
-    `Ketepatan waktu: ${record.sbpg?.status_ketepatan_waktu || '-'}`,
-    `Catatan peminjam: ${record.sbpg?.catatan_peminjam || '-'}`,
+    `Ketepatan waktu: ${sbpg.status_ketepatan_waktu || '-'}`,
+    `Catatan peminjam: ${sbpg.catatan_peminjam || '-'}`,
+    `Detail item:\n${itemLines}`,
   ].join('\n')
   const blob = new Blob([body], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -53,7 +59,12 @@ export default function DocumentsPage() {
   const handleDownload = async (record, kind) => {
     setDownloadError('')
     if (kind === 'sbpg') {
-      downloadSbpgSummary(record)
+      try {
+        const sbpgDetail = await apiGetSbpg(record.id)
+        downloadSbpgSummary(record, sbpgDetail)
+      } catch {
+        downloadSbpgSummary(record)
+      }
       return
     }
     try {
